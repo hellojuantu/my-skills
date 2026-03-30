@@ -52,6 +52,7 @@ If low-risk details are missing, make a reasonable default and record it in the 
 - Prefer browser automation or browser tools for Xiaohongshu search because search pages are JavaScript-heavy.
 - If the user is not logged in, pause and ask them to log in first.
 - Start with logged-in Xiaohongshu search using destination plus intent keywords. Read [references/search-playbook.md](references/search-playbook.md) for keyword patterns and filtering rules.
+- If search login state drops later, do not assume the whole Xiaohongshu path is blocked. Single-note pages can still remain readable enough for page snapshots, so once you already have note URLs from search results or share links, keep extracting route order and practical tips from those direct note pages before asking the user to log in again.
 - Keep real-user itinerary notes only. Filter out ads, merchants, listicles without route order, pure reposts, and generic destination intros.
 - If search coverage is thin, process user-provided Xiaohongshu share links as fallback.
 - When feasible, keep at least five Xiaohongshu notes for the main route set.
