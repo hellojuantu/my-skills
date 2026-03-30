@@ -211,6 +211,9 @@ def convert_inline(text: str) -> str:
 
     text = re.sub(r"`([^`]+)`", repl_code, text)
     text = re.sub(r"\[\^([^\]]+)\]", repl_footnote, text)
+    # Some markdown renderers and ReportLab runs can visually collapse adjacent
+    # superscript footnotes like [^1][^2], so insert a tiny spacer between them.
+    text = text.replace("</super><super>", '</super><font name="TripSans" size="4"> </font><super>')
     text = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", repl_link, text)
     return text
 
