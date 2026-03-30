@@ -1,0 +1,10 @@
+interface:
+  display_name: "XHS Travel Guide"
+  short_description: "Create Xiaohongshu-first travel guides"
+  icon_small: "./assets/travel-guide-xhs.svg"
+  icon_large: "./assets/travel-guide-xhs.svg"
+  brand_color: "#E34F6F"
+  default_prompt: "Use $travel-guide-xhs to research the destination, keep Xiaohongshu as the primary route source, and draft the report set."
+
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,71 @@
+{
+  "rules": [
+    {
+      "name": "小红书",
+      "tier": "primary_route",
+      "domains": [
+        "xiaohongshu.com"
+      ]
+    },
+    {
+      "name": "马蜂窝",
+      "tier": "supplemental_ugc",
+      "domains": [
+        "mafengwo.cn",
+        "mafengwo.com"
+      ]
+    },
+    {
+      "name": "穷游",
+      "tier": "supplemental_ugc",
+      "domains": [
+        "qyer.com"
+      ]
+    },
+    {
+      "name": "点评评论",
+      "tier": "supplemental_ugc",
+      "domains": [
+        "dianping.com"
+      ]
+    },
+    {
+      "name": "携程",
+      "tier": "supplemental_ugc_and_query",
+      "domains": [
+        "ctrip.com"
+      ]
+    },
+    {
+      "name": "12306",
+      "tier": "query_and_official",
+      "domains": [
+        "12306.cn"
+      ]
+    },
+    {
+      "name": "高德地图",
+      "tier": "query_and_official",
+      "domains": [
+        "amap.com",
+        "autonavi.com"
+      ]
+    },
+    {
+      "name": "政府/文旅官方",
+      "tier": "query_and_official",
+      "suffixes": [
+        "gov.cn"
+      ]
+    }
+  ],
+  "recommended_source_tags": [
+    "[^1]",
+    "[^2]",
+    "[^3]"
+  ],
+  "notes": {
+    "dynamic_official_domains": "If you use an official hotel, airline, scenic-spot, airport, or metro domain outside the base whitelist, confirm it is official and pass it to audit_sources.py with --allow-domain.",
+    "citation_style": "Use paper-style footnote markers such as [^1] in the report body and collect full source definitions in a final 来源脚注 section."
+  }
+}

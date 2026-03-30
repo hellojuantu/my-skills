@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Travel Guide XHS">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F96B85"/>
+      <stop offset="100%" stop-color="#D83E63"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="56" fill="url(#bg)"/>
+  <path d="M64 78h128c8.8 0 16 7.2 16 16v76c0 8.8-7.2 16-16 16H98l-34 24v-24c-8.8 0-16-7.2-16-16V94c0-8.8 7.2-16 16-16z" fill="#fff" opacity="0.96"/>
+  <path d="M88 114h80m-80 28h56m-56 28h92" stroke="#D94C6C" stroke-width="12" stroke-linecap="round"/>
+  <path d="M183 60l13 24 27 4-20 20 5 29-25-12-25 12 5-29-20-20 27-4 13-24z" fill="#FFE08A"/>
+</svg>
