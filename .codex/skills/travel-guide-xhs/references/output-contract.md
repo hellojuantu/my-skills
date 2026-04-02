@@ -45,6 +45,10 @@ Keep it lighter than the main report:
 - At least one route overview map image must appear in the main report body, not only as a side artifact.
 - For 2-plus-day trips or routes with non-trivial transfers, include an overview map plus day maps or clearly segmented route maps.
 - Keep the front of the report clean: show the overview map near the front, but place Day 1 and Day 2 maps inside the matching timeline subsections instead of putting every map in one early block.
+- Maps should be cropped tight enough that the route reads immediately. Avoid leaving large empty areas if a closer fit would make the path clearer.
+- When an overview map spans a long transfer plus tightly packed local stops, the overview may aggregate the local cluster into one regional marker or inset. Exact scenic stop positions should then appear in the local route map instead of being crammed into the long-distance overview.
+- Map labels must remain readable and should not stack on top of one another. If labels collide, the map is not ready.
+- Numbered stop digits should appear visually centered in their circles.
 - Supplemental UGC must be labeled as supplemental.
 - Hard facts must show official or approved query validation.
 - If validation is incomplete, mark the report as `未完成校验`.

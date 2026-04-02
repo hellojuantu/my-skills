@@ -85,8 +85,12 @@ If low-risk details are missing, make a reasonable default and record it in the 
 ### 5. Produce route maps and PDF
 
 - Use `scripts/render_route_map.py` with a small JSON spec to generate at least one route overview map before delivery.
+- Route maps should default to a tight-enough crop for the actual movement. If the map feels too zoomed out, switch to bounds fitting or raise the zoom until the route reads at a glance instead of floating in empty space.
+- If an overview map must cover a long intercity hop plus a dense local cluster, do not force every scenic stop onto that same wide-area map. Collapse the local cluster into a regional marker or add a local inset, then keep exact scenic positions in the day or segment map.
 - For 2-plus-day trips or routes with airport, railway, metro, or self-drive transfers, also generate day maps or segment maps whenever the movement would not be obvious from text alone.
 - Day maps belong inside the matching Day 1, Day 2, or segment timeline section, not grouped at the top of the report.
+- Labels must not cover each other or hide key stops. If the first render stacks labels on top of each other, rerender with adjusted placement until each stop name is readable.
+- Numbered stop badges must look centered inside their circles. If the digits look low or off-center, fix the rendering before delivery.
 - If the report contains map files but does not visibly embed or link them from the markdown body, treat the report as incomplete.
 - Use `scripts/build_trip_pdf.py` to turn the finished markdown report into a polished PDF with optional preview PNGs. The default PDF look should be black Songti-style Chinese text with restrained, print-like styling.
 
