@@ -1,4 +1,6 @@
 .DS_Store
+/.idea/
+*.iml
 __pycache__/
 *.py[cod]
 .pytest_cache/
