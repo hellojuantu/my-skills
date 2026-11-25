@@ -74,7 +74,7 @@ def arguments():
     commands.add_parser("status", help="List registered slots and their claims")
     acquire = commands.add_parser("acquire", help="Reserve a slot and record its owner")
     acquire.add_argument("slot", type=slot_number)
-    acquire.add_argument("--new-slot", action="store_true", help="Reserve a slot before registration")
+    acquire.add_argument("--new-slot", action="store_true", help="Reserve an unregistered slot the user requested")
     acquire.add_argument("--machine", choices=("Air", "Pro", "Mini", "Other"), required=True)
     acquire.add_argument("--agent", choices=("Codex", "Claude", "Manual"), required=True)
     acquire.add_argument("--hostname", help=argparse.SUPPRESS)
@@ -94,7 +94,8 @@ def arguments():
     release = commands.add_parser("release", help="Archive and release the specified claim")
     release.add_argument("slot", type=slot_number)
     release.add_argument("--claim-id", required=True)
-    release.add_argument("--reason", choices=("completed", "confirmed-ended"), required=True)
+    release.add_argument("--user-confirmed", action="store_true", required=True,
+                         help="The user explicitly requested release of this claim")
     return parser.parse_args()
 
 
@@ -181,7 +182,10 @@ def status(private, registered):
                 claim = {"claimId": None, "phase": "unknown", "error": str(error)}
             slots.append({"slot": slot, "consolePort": registered.get(slot, {}).get("consolePort"), "claim": claim})
     all_registered_claimed = bool(registered) and all(row["claim"] is not None for row in slots if row["slot"] in registered)
-    return {"ok": True, "slots": slots, "allRegisteredClaimed": all_registered_claimed}
+    result = {"ok": True, "slots": slots, "allRegisteredClaimed": all_registered_claimed}
+    if all_registered_claimed:
+        result["nextAction"] = "ask-user-to-review-sessions"
+    return result
 
 
 def acquire_claim(args, directory):
@@ -228,15 +232,15 @@ def change_claim(args, private, registered):
             write_owner(directory, owner)
             return {"ok": True, "slot": slot, "claim": owner}
 
-        if owner["legacy"] and args.reason != "confirmed-ended":
-            raise ValueError("Legacy claims require --reason confirmed-ended")
+        if not args.user_confirmed:
+            raise ValueError("Release requires an explicit user request. Keep the claim awaiting-handoff.")
         history = private / "claim-history"
         history.mkdir(mode=0o700, exist_ok=True)
         archive = history / f"{slot}-{args.claim_id}"
         if archive.exists():
             raise ValueError("This claim already has an archive. Verify the slot state before releasing it.")
         directory.rename(archive)
-        return {"ok": True, "slot": slot, "claimId": args.claim_id, "archivePath": str(archive), "reason": args.reason}
+        return {"ok": True, "slot": slot, "claimId": args.claim_id, "archivePath": str(archive), "reason": "user-confirmed"}
 
 
 def expected_mini_host():

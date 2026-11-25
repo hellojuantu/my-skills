@@ -41,10 +41,10 @@ python3 cloudcanal-dev-test/skills/verify-slot-claim/scripts/code_matches_model.
 
 两个调用者，一个槽位，最多 3 个 claim id。锁把同一个槽位上的申请、更新和释放串成完整的一步。更新只保留同一个 `claimId`，不改 id。
 
-`status` 按槽号顺序取得本次查询涉及的所有共享锁，再读取各条记录。这样，`allRegisteredClaimed` 和每个已登记槽位的占用来自同一次快照。多槽位查询由 Python 对照器检查。TLA 模型只覆盖单槽位上的并发操作。创建目录后进程中断、旧文本预留和 `confirmed-ended`、归档重名、槽位登记和 Mini 远程转发均在模型范围之外。
+`status` 按槽号顺序取得本次查询涉及的所有共享锁，再读取各条记录。这样，`allRegisteredClaimed` 和每个已登记槽位的占用来自同一次快照。多槽位查询由 Python 对照器检查。TLA 模型只覆盖单槽位上的并发操作。创建目录后进程中断、旧文本预留、用户的释放授权、归档重名、槽位登记和 Mini 远程转发均在模型范围之外。
 
 ## 与代码同步
 
-上次对照的是工作区里尚未提交的 `slot_claim.py`，仓库提交是 `b75065cdf7123f12e62394f7ee3eb5d6d9b6803e`。该提交里没有这份脚本。
+本次在 Mini 上对照的 `slot_claim.py` Git blob 是 `0427f5f86a486d92054f2765c38f0274b853325a`。`code_matches_model.py` 通过。TLC 检查 `SlotClaim.cfg` 的 25 个不同状态，全部满足 `OwnerIsLive`。`Broken.cfg` 的第 5 个状态复现了旧 ID 清除新预留。
 
-只有重新读过当前 `change_claim`，确认模型仍描述同一次加锁里的申请和释放，并且 `SlotClaim.cfg` 通过、`Broken.cfg` 失败之后，才把这里的提交号改成新的提交。代码在这次确认之后又改过，就先重跑，再决定模型要不要跟着改。之后若还有没经过这次检查的改动，用 `/maintain-formal-verification-skill` 把模型和代码对齐。
+只有重新读过当前 `change_claim`，确认模型仍描述同一次加锁里的申请和释放，并且 `SlotClaim.cfg` 通过、`Broken.cfg` 失败之后，才更新这里记录的源码版本。代码在这次确认之后又改过，就先重跑，再决定模型要不要跟着改。之后若还有没经过这次检查的改动，用 `/maintain-formal-verification-skill` 把模型和代码对齐。

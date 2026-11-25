@@ -24,7 +24,7 @@ def acquire_args():
         machine="Pro", agent="Codex", hostname="pro.local",
         run_id="release-1", branch="test",
         session_id="s", session_title="t", session_url=None,
-        claim_id=None, phase=None, job_id=None, note=None, reason=None,
+        claim_id=None, phase=None, job_id=None, note=None, user_confirmed=False,
     )
 
 
@@ -115,7 +115,7 @@ def check_change_claim_takes_write_lock(module, private):
                                   ("update", ["read", "publish"]), ("release", ["read", "archive"])):
             args.command = command
             args.phase = "testing"
-            args.reason = "completed"
+            args.user_confirmed = True
             events.clear()
             result = module.change_claim(args, private, registered)
             if not result.get("ok"):
@@ -162,7 +162,7 @@ def check_claims(module, private):
         return "acquire replaced an existing claim"
     args.command = "release"
     args.claim_id = "0" * 32
-    args.reason = "completed"
+    args.user_confirmed = True
     stale = module.change_claim(args, private, registered)
     if stale.get("ok") or not (private / ".claim-01").is_dir():
         return "a different claimId released the current claim"

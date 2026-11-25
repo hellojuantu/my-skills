@@ -2,7 +2,7 @@
 
 需要加载代码变更或重启服务时使用发布槽位。只在现有版本创建或验证任务时，直接访问相应 Mini Console，记录任务 ID 和页面结果。
 
-发布前在 Mini 的 `~/datasource-lab` 读取 `MINI-TEST-V1.md` 和 `cloudcanal-service/slots.json`，以登记表中的 `consolePort`、`network`、`project` 选择实际入口。同一槽位串行，不同槽位可并行。用户指定的入口优先。已有槽位都占用时先[查询和核实预留](#释放与交接)。没有可接手的槽位时分配下一个独立槽位。例如 01、02 占用且 8113 可用时创建 03，地址为 `http://mini:8113/`。
+发布前在 Mini 的 `~/datasource-lab` 读取 `MINI-TEST-V1.md` 和 `cloudcanal-service/slots.json`，以登记表中的 `consolePort`、`network`、`project` 选择实际入口。同一槽位串行，不同槽位可并行。用户指定的入口优先。已登记槽位都被预留时，按[释放与交接](#释放与交接)列出占用会话，等待用户查看并决定。用户已明确指定新槽位时，按指定入口准备。
 
 各槽位共享 Mini 的持久 MySQL 实例和 [Prometheus](http://mini:19090/)。新增槽位时先检查端口、子网和卷名是否空闲，独占预留，准备独立 Compose、Console/RDP schema、私有配置、卷、Worker 和监听端口，并登记 `slots.json`。分支、执行者、槽位、Git SHA、发布时间记在同一发布记录。用 SSH 管理 Mini，通过 `mini` 主机名访问页面。
 
@@ -18,7 +18,7 @@
 
 按 [Mini CHECK 报告模板](../../datasource-lab/references/check-report.md) 记录检查结果、目标槽位、计划替换的组件和回退范围。已授权的 Mini 发布在取得目标槽位 `write` 预留、核对 Worker 空闲并完成备份后直接执行。环境清理按巡检报告确认。
 
-1. 在 Air 或 Pro 的技能目录运行 `python3 scripts/slot_claim.py status`，选择目标槽位后运行 `python3 scripts/slot_claim.py acquire 03 --access write --machine Pro --agent Codex --run-id "$RELEASE_ID" --branch "$BRANCH"`。现有版本直接建任务或验证，需要专门保留槽位时可申请 `--access read`。机器和执行工具用实际值。用 `--session-title`、`--session-id` 和 `--session-url` 记录能核实的会话信息，链接填实际可打开的地址。Codex 有 `CODEX_THREAD_ID` 时自动记录会话 ID。按新增槽位流程预留尚未登记的槽位时加 `--new-slot`。Mini 将归属写到 `private/.claim-<槽号>/owner.json`。保存回执中的 `claimId` 和 `claimedAt`，后者用作 `CLAIM_UTC`。持有预留至验收或交接结束。
+1. 在 Air 或 Pro 的技能目录运行 `python3 scripts/slot_claim.py status`，选择目标槽位后运行 `python3 scripts/slot_claim.py acquire 03 --access write --machine Pro --agent Codex --run-id "$RELEASE_ID" --branch "$BRANCH"`。现有版本直接建任务或验证，需要专门保留槽位时可申请 `--access read`。机器和执行工具用实际值。用 `--session-title`、`--session-id` 和 `--session-url` 记录能核实的会话信息，链接填实际可打开的地址。Codex 有 `CODEX_THREAD_ID` 时自动记录会话 ID。用户明确要求新增槽位时加 `--new-slot`。Mini 将归属写到 `private/.claim-<槽号>/owner.json`。保存回执中的 `claimId` 和 `claimedAt`，后者用作 `CLAIM_UTC`。保留预留至用户明确要求释放。
 2. 同一执行者用能看到该 Worker 全部任务的已登录 Console 会话采集所有任务页，按 Worker 筛选。上一轮已知任务未出现在列表时补查该任务。每份 [Worker 取证快照](browser-job.md#发布前的-worker-快照)都带实际请求来源、Worker 和采集时间。用 `python3 scripts/check_console_jobs.py idle --origin "$CONSOLE_ORIGIN" --worker "$WORKER" --not-before "$CLAIM_UTC" page-1.json page-2.json --job previous-job.json` 核对本轮目标槽位、Worker、完整页数和任务状态。按实际页数与补查情况传入文件。遇到正在运行的任务、权限不足或分页缺失时，补齐证据或换空闲槽位。
 3. 用实际 Compose 项目及挂载点核对目标文件。备份现用 JAR 和涉及的配置，核对副本哈希。Mini 的 `apply-release-01.py` 只用于 01 首次发布，它要求槽位无任务且目标 schema 为空。其他发布使用 `jar-volume.sh` 按实际挂载和清单校验、备份、替换、还原及读回，或沿用已核实支持该槽位的发布入口。
 4. 发布入口在停服务前运行 `python3 scripts/slot_claim.py update 03 --claim-id "$CLAIM_ID" --phase deploying`，成功后再继续。沿用官方 ARM64 运行镜像和持久卷。停止目标槽位的 Console 和 Sidecar，再替换清单里的 JAR 并重启这两个组件。共享 MySQL、Prometheus 和另一个槽位继续运行。其他服务的 JAR、库和数据源继续使用现有版本与数据。
@@ -27,8 +27,7 @@
 
 ## 释放与交接
 
-- 待用户验收时，运行 `python3 scripts/slot_claim.py update 03 --claim-id "$CLAIM_ID" --phase awaiting-handoff --job-id 123 --note '待验事项'`。使用实际作业 ID 和待验事项。发布或测试中可用 `--phase deploying` 或 `--phase testing` 更新阶段。
-- 验收或交接结束后，由本轮持有者运行 `python3 scripts/slot_claim.py release 03 --claim-id "$CLAIM_ID" --reason completed`。Mini 核对当前 ID 后将该次预留归档到 `private/claim-history/`。任务、数据源、JAR 和数据保留。环境清理仍按巡检报告确认。
-- `status` 在同一份槽位快照中判断 `allRegisteredClaimed`。结果为 `true` 时，向用户列出各槽位的机器、会话名称、会话 ID、链接（如有）和 `claimId`。旧的文本记录显示已有信息和 `legacy-` 开头的 ID，缺少的会话信息标为未知。预留时间用于核实线索，预留需显式释放。
-- 接手遗留预留时，等用户确认原会话已结束，再核对现场无进行中的发布或回退。用刚展示的 ID 执行 `python3 scripts/slot_claim.py release 03 --claim-id "$CLAIM_ID" --reason confirmed-ended`。ID 已变化时重新查询。释放后重新申请槽位，并采集本轮 Worker 空闲证据。查询预留用共享锁。申请、更新和释放用独占锁。一个槽位同时只有一条预留。`access` 为 `read` 时只建任务或验证，为 `write` 时才替换 JAR 或发布。
-- 启动、继续或停止任务不查预留，也不要求先释放。本轮持有者在验收或交接结束前继续使用该槽位的 Console。目标槽位正在发布时，使用其他可用槽位或等发布结束。
+- 测试完成时，保留本轮 `write` 预留，运行 `python3 scripts/slot_claim.py update 03 --claim-id "$CLAIM_ID" --phase awaiting-handoff --job-id 123 --note '待验事项'`。填写实际任务 ID 和验收结果，多笔任务重复传 `--job-id`，无任务时省略。在交付中列出槽位、任务和待验事项。
+- `status` 返回 `allRegisteredClaimed: true` 时，按同一份快照列出每个槽位的端口、机器、run ID、分支、会话标题、会话 ID 和 `claimId`。把已核实可打开的会话链接附在对应行。没有链接时用标题或 ID 定位，旧记录缺少的字段标为「未记录」。请用户打开相应对话，决定保留、释放哪一条或另行新建槽位。用户决定前保留所有预留。
+- 用户明确要求释放某个槽位时，核对该条预留和当前 `claimId`，执行 `python3 scripts/slot_claim.py release 03 --claim-id "$CLAIM_ID" --user-confirmed`。接手遗留预留时，先向用户核实原会话已结束，并确认现场无进行中的发布或回退。Mini 在槽位独占锁内比较 ID 并将匹配的预留归档到 `private/claim-history/`。ID 已变化时重新展示新持有者，由用户决定。任务、数据源、JAR 和数据保留。释放后如需部署，重新申请并采集本轮 Worker 空闲证据。
+- 现有版本上建任务、启动、继续或停止任务直接使用 Mini Console。目标槽位正在替换组件时，使用其他可用 Console 或等重启结束。

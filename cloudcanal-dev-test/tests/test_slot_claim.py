@@ -65,8 +65,8 @@ class SlotClaimTest(unittest.TestCase):
         rows = self.payload(self.invoke("status"))["slots"]
         return {row["slot"]: row for row in rows}
 
-    def release(self, claim_id, reason):
-        return self.invoke("release", "01", "--claim-id", claim_id, "--reason", reason)
+    def release(self, claim_id):
+        return self.invoke("release", "01", "--claim-id", claim_id, "--user-confirmed")
 
     def test_claim_updates_handoff_and_archives_on_release(self):
         initial = self.slots()
@@ -93,20 +93,41 @@ class SlotClaimTest(unittest.TestCase):
         self.assertEqual(updated["note"], "waiting")
         self.assertEqual(self.slots()["01"]["claim"]["phase"], "awaiting-handoff")
         self.assertIsNone(self.slots()["02"]["claim"])
-        archive = self.payload(self.release(claim_id, "completed"))["archivePath"]
+        for options in (("--reason", "completed"), ()):
+            rejected = self.invoke("release", "01", "--claim-id", claim_id, *options)
+            self.assertNotEqual(rejected.returncode, 0, "Finishing a test released its slot")
+            self.assertIn("--user-confirmed", rejected.stderr)
+            self.assertEqual(self.slots()["01"]["claim"], updated)
+        self.assertEqual(updated["access"], "write")
+        archive = self.payload(self.release(claim_id))["archivePath"]
         self.assertTrue((self.root / archive).exists(), archive)
         self.assertIsNone(self.slots()["01"]["claim"])
 
     def test_stale_claim_id_cannot_change_the_next_claim(self):
         old_id = self.payload(self.acquire())["claim"]["claimId"]
-        self.payload(self.release(old_id, "completed"))
+        self.payload(self.release(old_id))
         replacement = self.payload(self.acquire("another-chat"))["claim"]
         self.assertNotEqual(old_id, replacement["claimId"])
         self.payload(self.invoke("update", "01", "--claim-id", old_id, "--note", "stale"), ok=False)
-        self.payload(self.release(old_id, "completed"), ok=False)
+        self.payload(self.release(old_id), ok=False)
         current = self.slots()["01"]["claim"]
         self.assertEqual(current["claimId"], replacement["claimId"])
         self.assertNotEqual(current.get("note"), "stale")
+
+    def test_full_registry_returns_owners_for_user_decision(self):
+        self.payload(self.acquire("first-chat"))
+        self.assertNotIn("nextAction", self.payload(self.invoke("status")))
+        self.payload(self.acquire("second-chat", slot="02"))
+        report = self.payload(self.invoke("status"))
+        self.assertTrue(report["allRegisteredClaimed"])
+        self.assertEqual(report["nextAction"], "ask-user-to-review-sessions")
+        for row, session_id in zip(report["slots"], ("first-chat", "second-chat")):
+            claim = row["claim"]
+            self.assertEqual(claim["runId"], "release-1")
+            self.assertEqual(claim["branch"], "test")
+            self.assertEqual(claim["sessionTitle"], "review chat")
+            self.assertEqual(claim["sessionId"], session_id)
+            self.assertEqual(claim["sessionUrl"], "codex://test/fixture")
 
     def test_status_cannot_combine_claims_from_before_and_after_a_handoff(self):
         claim_id = self.payload(self.acquire())["claim"]["claimId"]
@@ -120,7 +141,7 @@ class SlotClaimTest(unittest.TestCase):
             with real_lock(private, slot, exclusive=exclusive):
                 yield
             if slot == "01" and not exclusive:
-                self.payload(self.release(claim_id, "completed"))
+                self.payload(self.release(claim_id))
                 self.payload(self.acquire(slot="02"))
 
         registered = json.loads((self.root / "slots.json").read_text(encoding="utf-8"))
@@ -182,7 +203,7 @@ class SlotClaimTest(unittest.TestCase):
         self.assertTrue(claim["legacy"])
         self.assertIsNone(claim["sessionId"])
         self.payload(self.acquire(), ok=False)
-        self.payload(self.release(claim["claimId"], "confirmed-ended"))
+        self.payload(self.release(claim["claimId"]))
         self.assertIsNone(self.slots()["01"]["claim"])
 
     def test_concurrent_acquisitions_have_one_owner(self):
