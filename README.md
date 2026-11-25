@@ -6,12 +6,6 @@
 
 ## 当前收录
 
-- `travel-guide-xhs`：小红书优先的旅行攻略与路线报告
-- `pdf`：PDF 阅读、生成和版式检查
-- `playwright`：浏览器自动化
-- `playwright-interactive`：持续交互式浏览器调试
-- `screenshot`：桌面截图
-- `imagegen`：图片生成与编辑
 - [`pstack`](.codex/skills/pstack/README.md) 提供 Poteto 原版工作流和子技能。
 - [`cloudcanal-dev-test`](.codex/skills/cloudcanal-dev-test/SKILL.md)：原 `cloudcanal-air-test`。Air 或 Pro 开发和构建，Mini 固定槽位发布 JAR，使用 Poteto 协作并在真实 Console 做实库验收。
 - [`cloudcanal-console-automation`](.codex/skills/cloudcanal-console-automation/SKILL.md) 提供已登录 Console 的数据源、任务和配置操作。
@@ -26,13 +20,7 @@
 │       ├── cloudcanal-console-automation/
 │       ├── cloudcanal-dev-test/
 │       ├── datasource-lab/
-│       ├── imagegen/
-│       ├── pdf/
-│       ├── playwright/
-│       ├── playwright-interactive/
-│       ├── pstack/
-│       ├── screenshot/
-│       └── travel-guide-xhs/
+│       └── pstack/
 ├── .gitattributes
 ├── .gitignore
 └── README.md
@@ -46,7 +34,7 @@
 
 ```bash
 mkdir -p ~/.codex/skills
-ln -s /path/to/my-skills/.codex/skills/travel-guide-xhs ~/.codex/skills/travel-guide-xhs
+ln -s /path/to/my-skills/.codex/skills/pstack ~/.codex/skills/pstack
 ```
 
 如果是整体同步，也可以直接复制 `.codex/skills/` 里的内容。
