@@ -6,3 +6,4 @@
 | 启动任务不查槽位预留。 | `python3 cloudcanal-console-automation/scripts/check_no_invented_gates.py` |
 | Mini 控制台主机名从 `mini.env` 读取。不要在脚本里写死 `http://mini:`。 | `python3 cloudcanal-console-automation/scripts/check_mini_host.py` |
 | 查询预留走共享锁。`change_claim` 必须拿独占锁。对照器要看到这次调用，不能只检查锁函数本身。 | `python3 cloudcanal-dev-test/skills/verify-slot-claim/scripts/code_matches_model.py` |
+| Mini 发布在停服务前校验本轮 `claimId`，用 `write` 预留进入 `deploying`。已授权的发布直接执行。 | `python3 cloudcanal-dev-test/scripts/test_slot_claim_access.py` 检查 `read` 预留无法进入发布阶段。 |

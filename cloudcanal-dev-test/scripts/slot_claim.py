@@ -222,6 +222,8 @@ def change_claim(args, private, registered):
             for field, value in (("phase", args.phase), ("jobIds", args.job_id), ("note", args.note), ("access", args.access)):
                 if value is not None:
                     owner[field] = value
+            if owner.get("phase") == "deploying" and owner.get("access") != "write":
+                raise ValueError(f"Slot {slot} deployment requires a write claim. Use --access write.")
             owner["updatedAt"] = utc_now()
             write_owner(directory, owner)
             return {"ok": True, "slot": slot, "claim": owner}
