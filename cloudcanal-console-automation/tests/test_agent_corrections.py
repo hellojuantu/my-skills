@@ -9,6 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
 ALIAS_CHECK = SCRIPTS / "check_console_field_aliases.py"
 GATE_CHECK = SCRIPTS / "check_no_invented_gates.py"
+HOST_CHECK = SCRIPTS / "check_mini_host.py"
 
 
 def run_check(script, *paths):
@@ -55,4 +56,21 @@ class InventedGateCheck(unittest.TestCase):
             result = run_check(GATE_CHECK, sample)
         self.assertEqual(1, result.returncode)
         self.assertIn("RELEASE_STAGES_NOT_RUN", result.stderr)
+
+
+class MiniHostCheck(unittest.TestCase):
+    def test_current_scripts_read_configured_names(self):
+        result = run_check(HOST_CHECK)
+        self.assertEqual(0, result.returncode, result.stderr)
+
+    def test_old_hardcoded_mini_url_fails(self):
+        with tempfile.TemporaryDirectory() as directory:
+            sample = Path(directory) / "auth.py"
+            sample.write_text(
+                'slot = re.fullmatch(r"http://mini:([0-9]{1,5})", origin)\n',
+                encoding="utf-8",
+            )
+            result = run_check(HOST_CHECK, sample)
+        self.assertEqual(1, result.returncode)
+        self.assertIn("Mini host is hardcoded", result.stderr)
 
