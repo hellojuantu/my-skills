@@ -8,6 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
 ALIAS_CHECK = SCRIPTS / "check_console_field_aliases.py"
+GATE_CHECK = SCRIPTS / "check_no_invented_gates.py"
 
 
 def run_check(script, *paths):
@@ -37,4 +38,21 @@ class ConsoleFieldAliasCheck(unittest.TestCase):
         self.assertEqual(1, result.returncode)
         self.assertIn("fsmID", result.stderr)
         self.assertIn("fsmID, fsmId, fsm_id", result.stderr)
+
+
+class InventedGateCheck(unittest.TestCase):
+    def test_current_commands_have_no_invented_gate(self):
+        result = run_check(GATE_CHECK)
+        self.assertEqual(0, result.returncode, result.stderr)
+
+    def test_old_release_result_fails(self):
+        with tempfile.TemporaryDirectory() as directory:
+            sample = Path(directory) / "autotest.py"
+            sample.write_text(
+                'run["failurePhase"] = "RELEASE_STAGES_NOT_RUN"\n',
+                encoding="utf-8",
+            )
+            result = run_check(GATE_CHECK, sample)
+        self.assertEqual(1, result.returncode)
+        self.assertIn("RELEASE_STAGES_NOT_RUN", result.stderr)
 
