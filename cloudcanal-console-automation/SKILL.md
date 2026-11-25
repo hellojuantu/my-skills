@@ -13,6 +13,8 @@ Page acceptance for a CloudCanal change follows [CloudCanal dev test](../cloudca
 
 Run scripts from this skill directory.
 
+For an isolated Mini checkout, keep the adjacent `cloudcanal-dev-test` skill available. Automation loads its `scripts/mini_names.py` to validate the Console origin.
+
 ```bash
 export CLOUDCANAL_SKILL="${CLOUDCANAL_SKILL:-$PWD}"
 python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" --help
