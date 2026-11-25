@@ -1,0 +1,1 @@
+"""CloudCanal console automation helpers."""

@@ -1,0 +1,4 @@
+interface:
+  display_name: "CloudCanal 控制台自动化"
+  short_description: "按 CloudCanal 控制台流程管理数据源、操作任务和执行链路测试"
+  default_prompt: "用 $cloudcanal-console-automation 操作 CloudCanal 数据源或任务，或者执行链路测试。"

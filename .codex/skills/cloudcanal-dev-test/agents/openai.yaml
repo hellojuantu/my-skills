@@ -1,0 +1,4 @@
+interface:
+  display_name: "CloudCanal 开发与实库验收"
+  short_description: "Air 或 Pro 构建，Mini 运行测试、发布和真实 Console 验收"
+  default_prompt: "Use $cloudcanal-dev-test to deploy and verify this CloudCanal change."

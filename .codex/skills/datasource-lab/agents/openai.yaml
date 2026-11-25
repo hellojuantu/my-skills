@@ -1,0 +1,4 @@
+interface:
+  display_name: "数据源实验室"
+  short_description: "优先用 MotherData 管理 Mini 测试库，登记连接和巡检实库"
+  default_prompt: "用 $datasource-lab 执行 Mini 数据源巡检并生成周报。"
