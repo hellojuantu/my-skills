@@ -86,7 +86,7 @@ python3 scripts/check_console_jobs.py phase-readback "$directory/compare.tsv" --
 
 ## 发布前的 Worker 快照
 
-在预留目标槽位后记录 `CLAIM_UTC`，并从预留的槽位取得 `CONSOLE_ORIGIN` 和待重启的 `WORKER`。在具备完整任务可见性的 Console 账号中，按此 Worker 查任务，清除任务名、状态、数据源等额外筛选，并采集全部页。
+持有目标槽位预留后，记录本轮检查开始时间 `IDLE_CHECK_UTC`，取得 `CONSOLE_ORIGIN` 和待重启的 `WORKER`。沿用原预留发布新产物时仍重新采集。在具备完整任务可见性的 Console 账号中，按此 Worker 查任务，清除任务名、状态、数据源等额外筛选，并采集全部页。
 
 每份 `listbypage` 成功响应独立保存为 `{requestUrl, workerIp, capturedAt, data}`。`requestUrl` 取实际 HTTP 请求 URL，`workerIp` 取实际列表请求的 Worker 筛选，按 `workerId` 过滤时用 `workerId` 替代。`capturedAt` 记录收到响应的 ISO 8601 时间和时区。保留响应 `data` 的 `allJobCounts`、`jobVos` 以及任务状态核对所需的子任务、子作业字段。空列表同样记录实际使用的 Worker 筛选。
 
