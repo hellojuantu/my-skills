@@ -74,3 +74,23 @@ class MiniHostCheck(unittest.TestCase):
         self.assertEqual(1, result.returncode)
         self.assertIn("Mini host is hardcoded", result.stderr)
 
+
+CLAIM_CHECK = Path(__file__).resolve().parents[2] / "cloudcanal-dev-test" / "skills" / "verify-slot-claim" / "scripts" / "code_matches_model.py"
+CLAIM_SOURCE = Path(__file__).resolve().parents[2] / "cloudcanal-dev-test" / "scripts" / "slot_claim.py"
+
+
+class ClaimLockCheck(unittest.TestCase):
+    def test_current_change_claim_holds_the_write_lock(self):
+        result = run_check(CLAIM_CHECK, CLAIM_SOURCE)
+        self.assertEqual(0, result.returncode, result.stderr)
+
+    def test_change_claim_outside_the_lock_fails(self):
+        text = CLAIM_SOURCE.read_text(encoding="utf-8")
+        text = text.replace("    with slot_lock(private, slot, exclusive=True):\n", "    if True:\n", 1)
+        with tempfile.TemporaryDirectory() as directory:
+            sample = Path(directory) / "slot_claim.py"
+            sample.write_text(text, encoding="utf-8")
+            result = run_check(CLAIM_CHECK, sample)
+        self.assertEqual(1, result.returncode, result.stdout)
+        self.assertIn("change_claim does not hold the write lock", result.stderr)
+
