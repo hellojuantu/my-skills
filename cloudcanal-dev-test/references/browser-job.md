@@ -2,7 +2,7 @@
 
 用现有版本创建任务时直接选用合适的 Mini Console。需要部署时按[发布流程](mini-release.md)进入本轮独占槽位。进入向导前核对浏览器地址栏的协议、主机和端口，沿用该入口已登录的会话。交接时记录实际页面。如果停在登录页，注明入口和待完成的登录步骤。
 
-遇到登录页、SSO 或身份复核时，交给用户完成。Mini 主账号以该槽位私有文件 `~/datasource-lab/cloudcanal-service/private/slot-<NN>/console.env` 的 `USER_EMAIL` 为准，避免套用 Air 或默认账号。页面提示 `Account not exist` 表示账号查找失败。先对照所填账号与 `USER_EMAIL`，在已有授权范围内只读核对该槽位的 RDP schema 中配置的账号是否存在且已启用。保留原始提示，无需重试密码。密码仅在私密登录环节使用。
+Console 遇到登录页、SSO 或身份复核时，交给用户完成。Mini 主账号以该槽位私有文件 `~/datasource-lab/cloudcanal-service/private/slot-<NN>/console.env` 的 `USER_EMAIL` 为准，避免套用 Air 或默认账号。页面提示 `Account not exist` 表示账号查找失败。先对照所填账号与 `USER_EMAIL`，在已有授权范围内只读核对该槽位的 RDP schema 中配置的账号是否存在且已启用。保留原始提示，无需重试密码。密码仅在私密登录环节使用。
 
 需要通过 Automation 操作时，用它的 `login --base-url "$CONSOLE_ORIGIN" --save-cookie "$SESSION_FILE"` 创建同槽位会话，执行命令时传 `--cookie-file "$SESSION_FILE"`。DevTools 用于页面验收证据，证据中保留请求来源、结果码和任务 ID。
 

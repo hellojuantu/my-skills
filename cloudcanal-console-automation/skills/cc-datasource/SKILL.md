@@ -9,7 +9,7 @@ Use the bundled `$CLOUDCANAL_SKILL/scripts/create_datajob.py` command for dataso
 
 ## Access Model
 
-Use the existing Console session for datasource work. Switch to OpenAPI only when the user explicitly requests it. If the session is missing, the user can run the first command to sign in. Use the second command to check the session.
+Reuse the same-origin Automation session created by `login --save-cookie`. Use the browser's existing login for Console page checks. Switch to OpenAPI only when the user explicitly requests it. Use the commands below to obtain an Automation session and check it.
 
 ```bash
 python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" login \

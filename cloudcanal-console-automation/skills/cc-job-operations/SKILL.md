@@ -27,7 +27,7 @@ python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" operate-jobs \
 
 Use `continue-job` only for the same post-structure state the frontend handles with `fsmStart`: structure migration is complete, `fsmActive=false`, and full/increment tasks are still waiting. For ordinary lifecycle work use `start-job`, `stop-job`, `restart-job`, or `replay-job`.
 
-These commands do not read or release a Mini slot claim. The holder keeps the claim until acceptance or handoff and continues to use that slot's Console. Another session picks a slot that has no claim, or waits until this claim is handed off.
+Run these commands against the existing slot's Console. They do not read or release a slot claim. For a deployment and its handoff, follow the [Mini release workflow](../../../cloudcanal-dev-test/references/mini-release.md).
 
 ## FSM And Delete Cleanup
 

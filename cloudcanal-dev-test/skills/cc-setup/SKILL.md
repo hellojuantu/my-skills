@@ -24,12 +24,16 @@ Host <MINI_SSH_HOST>
 
 不要把 Tailscale IP 写进这个文件。
 
-5. 运行 `ssh -o BatchMode=yes <MINI_SSH_HOST> 'hostname -s'`。身份复核会打出一个链接。在 Google Chrome 打开，优先用 Chrome 里已有的 Google 登录。复核交给用户。保留当前链接，不要代点登录。
+5. 运行 `ssh -o BatchMode=yes <MINI_SSH_HOST> 'hostname -s'`。SSH 打出复核链接时，按 [Mini SSH 身份复核](#mini-ssh-身份复核) 继续。
 6. 把打印出的短主机名写入 `MINI_HOSTNAME`。
 
 `run_mini_test.py` 和 `slot_claim.py` 读这个文件。任一值为空，或远端短主机名和 `MINI_HOSTNAME` 不同，它们就拒绝执行。
 
 Console 会话和 Lab 页面验收按 `MINI_HOSTNAME`、`MINI_TAILSCALE_NAME`、`MINI_SSH_HOST` 中的完整主机名识别 Mini。`run_mini_test.py` 会从这份文件把三个名称传给 Mini 上的测试进程。
+
+## Mini SSH 身份复核
+
+在 Google Chrome 打开 SSH 返回的 Tailscale 复核链接，优先使用 Chrome 已有的 Google 登录完成复核，成功后重试原 SSH 命令。需要用户本人操作时，保留当前链接并交给用户。
 
 ## 链接技能
 

@@ -5,7 +5,7 @@ description: 在 Mini 优先通过 MotherData 安装和维护 CloudCanal 测试�
 
 # 数据源实验室
 
-通过已有 SSH 别名 `mini` 进入 `~/datasource-lab`。这里是台账、完整快照、已发布可用清单和巡检记录的主目录。CloudCanal 新建测试数据库一律安装到 Mini，包括一次性复现和临时容器。Tailscale SSH 发出身份复核链接时，直接在 Chrome 打开验证页。登录或身份复核需要用户操作时交给用户，验证成功后继续原操作。
+通过 `mini.env` 中的 `MINI_SSH_HOST` 进入 `~/datasource-lab`。这里是台账、完整快照、已发布可用清单和巡检记录的主目录。CloudCanal 新建测试数据库一律安装到 Mini，包括一次性复现和临时容器。SSH 身份复核按 [Mini SSH 身份复核](../cloudcanal-dev-test/skills/cc-setup/SKILL.md#mini-ssh-身份复核) 继续。
 
 先核对 MotherData 已有安装和可用模板。满足版本、架构和用例要求的已验证实例直接复用。有适用模板时在 MotherData 安装。历史安装失败时查明原因。缺少适用模板时，才在 Mini 临时手工部署，并在 Lab 台账记录缺失的模板、临时用途和后续纳入 MotherData 的事项。
 

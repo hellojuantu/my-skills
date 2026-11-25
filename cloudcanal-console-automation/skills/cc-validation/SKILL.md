@@ -37,6 +37,8 @@ After job create/edit:
 5. Start only when requested or when `--start-after-create` is part of the plan.
 6. Do not delete temporary test jobs unless the user explicitly asks for cleanup.
 
+For a CloudCanal change, complete the real [Console page acceptance](../../../cloudcanal-dev-test/references/browser-job.md) and record the page URL, job ID, result and any blocked step. Use CLI readback as supporting evidence.
+
 Report:
 
 - Environment URL and cluster id used.
@@ -48,6 +50,8 @@ Report:
 - Any branch that was only dry-run verified, not live-created.
 
 ## Cleanup only when requested by the user
+
+Confirm the exact datasource or job IDs and their test-run ownership. Include child jobs only when they are part of the confirmed scope.
 
 - Delete temporary datasources with `delete --yes` after connection tests.
 - Delete temporary jobs with `delete-job --delete-children --stop-first --inactivate-fsm` after precheck/start/operation tests, so active check-child FSMs do not force a manual Console cleanup.
