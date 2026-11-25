@@ -59,6 +59,19 @@ python3 scripts/check_console_jobs.py browser-job "$directory" "$directory/query
 
 此命令核对向导创建、详情和查询的 Console 来源，验证截图格式、任务 ID、子任务 ID 及启动状态。按用例逐项复核截图中实际显示的设置、全量与增量状态、目标原生读回以及独立 CHECK 的计数与明细。若失败，报告已到达的页面、原始提示和缺少的证据。
 
+## 新建增量验收任务收尾
+
+目标读回和本轮最后一次增量验证完成后，停止本轮为了验收新建并启动的增量任务。验收因失败结束时，先保存失败证据再停止。用户要求继续运行时，记录任务 ID 和当前状态。停任务时用创建回执中的 Console 入口和任务 ID，在同一详情页点击停止，或使用 [cc-job-operations 的 `stop-job`](../../cloudcanal-console-automation/skills/cc-job-operations/SKILL.md#lifecycle)。
+
+停止后刷新同一任务，查询直到 `fsmActive=false` 且每个 `INCREMENT` 子任务为 `STOP`。把最后一次停止后的成功 `queryjob` 回执单独保存为 `stopped-query.json`。保留 `requestUrl`，以及 `data` 下的 `dataJobId`、`fsmActive`、`dataTasks`，子任务保留 `dataTaskId`、`dataTaskType`、`dataTaskStatus`。在技能目录核对回执，并在交付中记录作业 ID、增量子任务 ID 和状态。
+
+```sh
+python3 scripts/check_console_jobs.py stopped-test-job --origin "$CONSOLE_ORIGIN" \
+  --job-id "$JOB_ID" "$directory/stopped-query.json"
+```
+
+查询或停止受阻时，记录任务 ID、最后见到的状态和提示。部署过本轮产物时，槽位预留按[发布流程](mini-release.md)交接。
+
 ## 已有任务和连接测试
 
 换包后恢复已有任务时，用同一任务详情页和 `queryjob` 核对任务 ID、子任务 ID 及状态。涉及增量续跑时，记录停止前的持久化位点和恢复后的位点或读端状态，按本轮用例核对目标原生读回。发布清单记录实际加载的 JAR。只有创建新任务时才采集创建请求。

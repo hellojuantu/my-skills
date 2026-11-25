@@ -15,7 +15,7 @@ Air、Pro 用于开发和构建。CloudCanal 单测、前端测试、组件测�
 2. **实现并复核。** 遵循 [编码、提交和人工提测](references/coding-workflow.md)。选择 [Poteto](../pstack/skills/poteto-mode/SKILL.md) 的适用流程前，先读 [cc-setup](skills/cc-setup/SKILL.md#codex-代理)。小改动先复现和修根因。共享逻辑看调用方，设计取舍先核对契约，按可独立验收的任务委派。原版流程见 [索引](references/pstack-index.md)。用户指定 Claude 协作时读 [交接流程](references/claude-collaboration.md)。
 3. **构建与测试。** 在开发机使用仅构建的目标，例如 Gradle `assemble` 或 Maven `-Dmaven.test.skip=true package`。用 Mini 测试入口跑本轮单测和引擎组件测试，涉及 JDBC 时验证实际驱动读写。需要发布时按[Mini 槽位发布](references/mini-release.md)独占可用槽位。已登记槽位都被预留时，列出持有者，请用户查看会话并决定。读取槽位私有数据源计划，缺失时按[数据源实验室](../datasource-lab/SKILL.md)补齐已验证的 fixture。
 4. **实际验收。** 在已登录的 Mini Console 用真实操作完成验证。数据源和驱动变更使用 [Lab 槽位连接验收](../datasource-lab/SKILL.md#cloudcanal-槽位连接验收)，将每条 Worker 连接结果写进 [Mini CHECK 报告](../datasource-lab/references/check-report.md)。数据任务按 [页面取证](references/browser-job.md) 保存任务 ID、页面和状态，独立读回数据。[Console 自动化](../cloudcanal-console-automation/SKILL.md) 可辅助准备配置和查询证据。Mini Console 页面遇到登录、SSO 或身份复核时，交给用户完成。Mini SSH 提示 Tailscale 复核时，按 [cc-setup 的 Chrome 流程](skills/cc-setup/SKILL.md#mini-ssh-身份复核)打开复核链接。页面流程未走完时报告已到达的步骤、实际提示和剩余步骤。
-5. **交付。** 建任务验收记录 Mini Console 入口、任务 ID、页面结果、目标读回与适用的 CHECK 证据。涉及构建发布时附各仓库 SHA、发布槽位和已加载 JAR 的校验。持续使用本轮槽位时先复核当前任务状态。
+5. **收尾与交付。** 按 [新建增量验收任务收尾](references/browser-job.md#新建增量验收任务收尾)完成本轮增量任务的关闭和取证。建任务验收记录 Mini Console 入口、任务 ID、页面结果、目标读回与适用的 CHECK 证据。涉及构建发布时附各仓库 SHA、发布槽位和已加载 JAR 的校验。持续使用本轮槽位时先复核当前任务状态。
 
 ## 验收规则与检查
 
@@ -26,6 +26,7 @@ Air、Pro 用于开发和构建。CloudCanal 单测、前端测试、组件测�
 | Mini Automation 通过自身登录流程取得会话。页面操作沿用该槽位已登录的浏览器。 | Automation `login --save-cookie` 生成同槽位会话文件。登录或身份复核需交接时保留页面提示。 |
 | 需要比较全量和增量时，按同一输入逐笔核对。需要比较版本时，为每个版本保留同样的证据。 | [时间戳读回](references/browser-job.md#全量和增量逐笔核对)使用 `phase-readback` 分别检查正确性和结果是否一致。 |
 | Console 端到端结果带本轮任务 ID，组件实测标明实际跑到的读写阶段。 | `browser-job` 核对页面、任务和启动状态。`fresh-check` 核对本轮 CHECK 子任务的完成时间。 |
+| 增量验收收尾时停止本轮新建并启动的任务。用户要求继续运行时记录状态。 | `stopped-test-job` 核对停止后的同一任务回执，确认 `fsmActive=false` 和增量子任务 `STOP`。 |
 
 ## 数据链路怎么验
 

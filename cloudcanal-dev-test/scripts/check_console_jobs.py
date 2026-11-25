@@ -111,10 +111,15 @@ def worker_snapshot(path, origin, worker, not_before, endpoint):
     return response_data(snapshot, path, origin, endpoint)
 
 
-def check_idle(pages, supplemental_jobs, origin_url, worker, not_before):
+def console_origin(origin_url):
     origin, route = browser_route({"origin": origin_url}, "origin", "--origin")
     if route or urlsplit(origin_url).query or urlsplit(origin_url).fragment:
         raise ValueError("--origin: use the Console origin without a page path")
+    return origin
+
+
+def check_idle(pages, supplemental_jobs, origin_url, worker, not_before):
+    origin = console_origin(origin_url)
     if not worker.strip() or worker == "0":
         raise ValueError("--worker: select a specific workerId or workerIp")
     not_before = timestamp(not_before, "--not-before")
@@ -294,6 +299,29 @@ def check_browser_job(directory, query):
     print(f"Browser creation, detail and started-task evidence match job {job_id}")
 
 
+def check_stopped_test_job(query, origin_url, job_id):
+    job = response_data(read_snapshot(query), query, console_origin(origin_url), QUERY_JOB)
+    if required_id(job, "dataJobId", query) != job_id:
+        raise ValueError(f"{query}: capture queryjob for the new test job {job_id}")
+    increment_ids = []
+    for task in required_list(job, "dataTasks", query):
+        task_id = required_id(task, "dataTaskId", query)
+        task_type = task.get("dataTaskType")
+        if not isinstance(task_type, str) or not task_type:
+            raise ValueError(f"job {job_id}, task {task_id}: capture dataTaskType")
+        if task_type == "INCREMENT":
+            where = f"job {job_id}, INCREMENT task {task_id}"
+            status = task_status(task, where)
+            if status != "STOP":
+                raise ValueError(f"{where} is {status}. Stop the test job and query again until STOP")
+            increment_ids.append(str(task_id))
+    if not increment_ids:
+        raise ValueError(f"job {job_id}: expected an INCREMENT task. Check the test job ID and its dataTasks")
+    if job.get("fsmActive") is not False:
+        raise ValueError(f"job {job_id}: query the stopped job again and capture fsmActive=false")
+    print(f"job {job_id}: fsmActive=false, INCREMENT tasks {', '.join(increment_ids)} STOP")
+
+
 def readback_seconds(text, where):
     match = ISO_TIMESTAMP.fullmatch(text)
     try:
@@ -389,6 +417,10 @@ def main():
     browser = commands.add_parser("browser-job", help="Match wizard creation, detail page and started query-job")
     browser.add_argument("directory", type=Path, help="Browser capture directory with create.json, detail.json and a detail PNG or JPEG")
     browser.add_argument("query", type=Path, help="Query-job requestUrl and response data captured after start")
+    stopped = commands.add_parser("stopped-test-job", help="Check a new incremental test job after stopping it")
+    stopped.add_argument("--origin", required=True, help="Console origin used to create the test job")
+    stopped.add_argument("--job-id", type=int, required=True, help="Job ID returned by the test wizard")
+    stopped.add_argument("query", type=Path, help="Query-job requestUrl and response data captured after stop")
     fresh = commands.add_parser("fresh-check", help="Check the completion of a replayed or newly created CHECK job")
     fresh.add_argument("after", type=Path)
     provenance = fresh.add_mutually_exclusive_group(required=True)
@@ -404,6 +436,8 @@ def main():
             check_idle(args.pages, args.job, args.origin, args.worker, args.not_before)
         elif args.command == "browser-job":
             check_browser_job(args.directory, args.query)
+        elif args.command == "stopped-test-job":
+            check_stopped_test_job(args.query, args.origin, args.job_id)
         elif args.command == "phase-readback":
             check_phase_readback(args.tsv, args.expect)
         else:

@@ -8,3 +8,4 @@
 | 查询预留走共享锁。`change_claim` 必须拿独占锁。对照器要看到这次调用，不能只检查锁函数本身。 | `python3 cloudcanal-dev-test/skills/verify-slot-claim/scripts/code_matches_model.py` |
 | Mini 发布在停服务前校验本轮 `claimId`，用 `write` 预留进入 `deploying`。已授权的发布直接执行。 | `python3 cloudcanal-dev-test/scripts/test_slot_claim_access.py` 检查 `read` 预留无法进入发布阶段。 |
 | Mini 测完保留原写预留，更新为 `awaiting-handoff`。全占用时列出会话供用户打开和决定。用户明确要求后才释放指定预留。 | `slot_claim.py release` 要求 `--user-confirmed` 并核对当前 `claimId`。在 Mini 运行 `python3 cloudcanal-dev-test/tests/test_slot_claim.py` 验证交接、全占用和旧 ID。 |
+| 本轮新建并启动的 Mini 增量验收任务在目标读回后停止。用户要求继续运行时记录状态。 | `check_console_jobs.py stopped-test-job` 核对停止后的同一任务回执。 |

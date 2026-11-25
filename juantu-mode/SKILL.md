@@ -32,3 +32,5 @@ description: Use Juantu's working preferences when explicitly asked for /juantu-
 1. 按项目规则跑相关单元、组件或集成测试。
 2. 在本次要验的版本和环境，从用户平时使用的入口完成相关操作，例如创建、修改、连接或恢复。操作后核对用户能看到的结果。涉及任务或记录时，回看同一对象的状态或内容。涉及数据写入或同步时，从目标端读回核对。涉及兼容性时，复跑受影响的旧用法。
 3. 交付先说结果，再给实际跑过的测试、使用的入口和观察到的结果。适用时附上环境、版本和任务或记录 ID。受阻时，写明卡在哪一步、看到的提示和还没完成的步骤。
+
+CloudCanal Mini 验收收尾按 [新建增量验收任务收尾](../cloudcanal-dev-test/references/browser-job.md#新建增量验收任务收尾)操作。

@@ -152,5 +152,38 @@ class BrowserJobTest(unittest.TestCase):
         verify(snapshot, {**job, "data": {**job["data"], "fsmActive": True}}, 1, "fsmActive=true")
 
 
+class StoppedTestJobTest(unittest.TestCase):
+    def test_requires_stop_for_the_new_incremental_job(self):
+        # Task 10 on Mini 02 had full task 14 COMPLETE and increment task 15 RUNNING before stop.
+        full = {"dataTaskId": 14, "dataTaskType": "FULL", "dataTaskStatus": "COMPLETE"}
+        increment = {"dataTaskId": 15, "dataTaskType": "INCREMENT", "dataTaskStatus": "STOP"}
+        job = {"dataJobId": 10, "fsmActive": False, "dataTasks": [full, increment]}
+        other_increment = {**increment, "dataTaskId": 16, "dataTaskStatus": "RUNNING"}
+        console = "http://mini:8112"
+        cases = [
+            (job, console + QUERY, 0, "INCREMENT tasks 15 STOP"),
+            ({**job, "fsmActive": True}, console + QUERY, 1, "fsmActive=false"),
+            ({**job, "dataTasks": [full]}, console + QUERY, 1, "expected an INCREMENT task"),
+            ({**job, "dataTasks": [full, increment, other_increment]}, console + QUERY, 1, "task 16 is RUNNING"),
+            ({**job, "dataJobId": 11}, console + QUERY, 1, "new test job 10"),
+            (job, CONSOLE + QUERY, 1, "expected Console"),
+            (job, console + LIST, 1, "expected Console"),
+        ]
+        for status in ("RUNNING", "WAIT_STOP", "INIT", "COMPLETE"):
+            pending = {**job, "fsmActive": status == "RUNNING",
+                       "dataTasks": [full, {**increment, "dataTaskStatus": status}]}
+            cases.append((pending, console + QUERY, 1, f"task 15 is {status}"))
+
+        with tempfile.TemporaryDirectory() as temporary:
+            receipt = Path(temporary) / "stopped-query.json"
+            command = [sys.executable, str(GATE), "stopped-test-job", "--origin", console, "--job-id", "10", str(receipt)]
+            for data, url, exit_code, message in cases:
+                with self.subTest(message=message):
+                    receipt.write_text(json.dumps({"requestUrl": url, "data": data}))
+                    result = subprocess.run(command, capture_output=True, text=True)
+                    self.assertEqual(result.returncode, exit_code, result.stderr)
+                    self.assertIn(message, result.stdout + result.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()
