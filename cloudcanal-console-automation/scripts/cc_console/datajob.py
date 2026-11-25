@@ -346,7 +346,7 @@ def explicit_table_pairs(args):
     return pairs
 
 
-def parse_table_args(args, src_level, dst_level, schema_rule, table_rule, target_names=None):
+def parse_table_args(args, src_level, dst_level, schema_rule, table_rule):
     pairs = explicit_table_pairs(args)
     if not pairs:
         raise ValueError("at least one --table or --table-map is required unless schema JSON is supplied")
@@ -368,7 +368,7 @@ def parse_table_args(args, src_level, dst_level, schema_rule, table_rule, target
                 target_db = args.target_db or transform_name(src.get("db"), schema_auto_rule)
                 target_schema = args.target_schema or transform_name(src.get("schema"), schema_auto_rule)
             source_table = src["table"]
-            target_table = args.target_table or (target_names or {}).get(source_table) or transform_name(source_table, table_rule)
+            target_table = args.target_table or transform_name(source_table, table_rule)
             dst = {"db": target_db, "schema": target_schema, "table": target_table}
         tables.append(
             {
@@ -851,7 +851,7 @@ def verify_job_support(client, payload, datasources):
         raise ApiError(f"Console does not support a full load for {route}")
 
 
-def build_datajob_payload(args, client, *, target_names=None):
+def build_datajob_payload(args, client):
     source_id = parse_int(args.source_ds_id, "sourceDataSourceId")
     target_id = parse_int(args.target_ds_id, "targetDataSourceId")
     source_ds = query_datasource(client, source_id)
@@ -877,7 +877,7 @@ def build_datajob_payload(args, client, *, target_names=None):
     mapping_json = read_json_arg(args.mapping_json)
     tables = []
     if source_schema_json is None or mapping_json is None:
-        tables = parse_table_args(args, source_level, target_level, schema_rule, table_rule, target_names)
+        tables = parse_table_args(args, source_level, target_level, schema_rule, table_rule)
         parse_column_maps(args, tables)
     if source_schema_json is None:
         enrich_source_columns(client, source_id, cluster_id, source_type, source_level, source_host_type, tables, args.auto_create_target)
@@ -1010,12 +1010,12 @@ def query_job(client, job_id):
     return success_data(client, response, "query data job")
 
 
-def wait_job_creation(client, job_id, timeout_seconds, summarize=None):
+def wait_job_creation(client, job_id, timeout_seconds):
     deadline = time.time() + max(int(timeout_seconds or 0), 1)
     last = None
     while time.time() < deadline:
         job = query_job(client, job_id)
-        last = summarize(job) if summarize else {key: job.get(key) for key in ("dataJobId", "lifeCycleState", "consoleJobId", "consoleTaskState")}
+        last = {key: job.get(key) for key in ("dataJobId", "lifeCycleState", "consoleJobId", "consoleTaskState")}
         console_state = job.get("consoleTaskState")
         if console_state == "FAILED":
             summary = None

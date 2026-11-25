@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
-from cc_console import auth, autotest, cli
+from cc_console import auth, cli
 
 
 def run_cli(*args):
@@ -37,8 +37,8 @@ class ConsoleAuthTest(unittest.TestCase):
             fixture.start()
             self.addCleanup(fixture.stop)
 
-    def test_only_configured_hosts_require_mini_session_and_batch_runner(self):
-        with tempfile.TemporaryDirectory() as directory, patch.object(autotest.socket, "gethostname", return_value="air"):
+    def test_only_configured_hosts_require_mini_session(self):
+        with tempfile.TemporaryDirectory() as directory:
             cookie = Path(directory) / "session"
             for host in ("LAB-BOX", "mini", "box.lab.test.", "mini.unrelated.test"):
                 origin = f"http://{host}:8111"
@@ -47,12 +47,9 @@ class ConsoleAuthTest(unittest.TestCase):
                 with self.subTest(origin=origin):
                     if host == "mini.unrelated.test":
                         self.assertEqual(auth.read_cookie(args), "jwt_token=example")
-                        autotest.require_on_configured_mini(origin)
                         continue
                     with self.assertRaisesRegex(auth.ApiError, "Mini needs an existing session"):
                         auth.read_cookie(args)
-                    with self.assertRaisesRegex(auth.ApiError, "Run this autotest on lab-box"):
-                        autotest.require_on_configured_mini(origin)
                     cookie.write_text(f"# origin={origin}\njwt_token=example\n")
                     self.assertEqual(auth.read_cookie(args), "jwt_token=example")
                     cookie.write_text(f"# origin=http://{host}:8112\njwt_token=example\n")

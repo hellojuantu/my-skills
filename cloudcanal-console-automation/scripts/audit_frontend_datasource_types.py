@@ -4,7 +4,7 @@ import json
 import os
 from pathlib import Path
 
-from cc_console.db_adapters import ADAPTERS
+from cc_console.datasource import DS_TYPE_ALIASES
 
 
 def frontend_types(frontend_dir):
@@ -25,40 +25,8 @@ def frontend_types(frontend_dir):
     return sorted(result), groups
 
 
-def adapter_type_rows():
-    rows = []
-    for adapter in ADAPTERS:
-        report = adapter.dependency_report()
-        caps = report.get("capabilities") or {}
-        data_caps = {
-            "initSource": bool(caps.get("initSource")),
-            "prepareTarget": bool(caps.get("prepareTarget")),
-            "fakerCrud": bool(caps.get("fakerCrud")),
-            "compare": bool(caps.get("compare")),
-        }
-        if all(data_caps.values()):
-            status = "READY"
-        elif any(data_caps.values()):
-            status = "PARTIAL"
-        else:
-            status = "ROUTED_ONLY"
-        for ds_type in report.get("dataSourceTypes") or []:
-            rows.append(
-                {
-                    "type": ds_type,
-                    "adapter": report.get("adapter"),
-                    "dataModel": report.get("dataModel"),
-                    "defaultProfile": report.get("defaultProfile"),
-                    "status": status,
-                    "capabilities": caps,
-                    "installCommands": report.get("installCommands") or [],
-                }
-            )
-    return sorted(rows, key=lambda row: row["type"].lower())
-
-
 def main():
-    parser = argparse.ArgumentParser(description="Audit CloudCanal frontend datasource types against autotest adapter routing.")
+    parser = argparse.ArgumentParser(description="Audit CloudCanal frontend datasource types against CLI type names.")
     parser.add_argument("--frontend-dir", default=os.environ.get("CLOUDCANAL_WEB_DIR", ""), help="Path to clouddm-web checkout.")
     parser.add_argument("--format", choices=("json", "markdown"), default="markdown")
     args = parser.parse_args()
@@ -67,18 +35,14 @@ def main():
         raise SystemExit("ERROR: --frontend-dir or CLOUDCANAL_WEB_DIR is required")
     frontend_dir = Path(args.frontend_dir).expanduser().resolve()
     frontend, groups = frontend_types(frontend_dir)
-    adapter_rows = adapter_type_rows()
-    registered = sorted({row["type"] for row in adapter_rows})
-    row_by_type = {row["type"]: row for row in adapter_rows}
-    missing = sorted(set(frontend) - set(registered))
-    extra = sorted(set(registered) - set(frontend))
-    rows = []
-    counts = {"READY": 0, "PARTIAL": 0, "ROUTED_ONLY": 0, "MISSING": 0}
-    for ds_type in frontend:
-        row = dict(row_by_type.get(ds_type) or {"type": ds_type, "status": "MISSING"})
-        row["groups"] = sorted(groups.get(ds_type) or [])
-        counts[row["status"]] = counts.get(row["status"], 0) + 1
-        rows.append(row)
+    registered = set(DS_TYPE_ALIASES.values())
+    missing = sorted(set(frontend) - registered)
+    extra = sorted(registered - set(frontend))
+    counts = {"RECOGNIZED": len(frontend) - len(missing), "MISSING": len(missing)}
+    rows = [
+        {"type": ds_type, "status": "RECOGNIZED" if ds_type in registered else "MISSING", "groups": sorted(groups[ds_type])}
+        for ds_type in frontend
+    ]
     summary = {
         "frontendTypes": len(frontend),
         "registeredTypes": len(registered),
@@ -97,18 +61,16 @@ def main():
     print("- registeredTypes: {registeredTypes}".format(**summary))
     print("- missingFrontendTypes: " + (", ".join(missing) if missing else "none"))
     print("- extraRegisteredTypes: " + (", ".join(extra) if extra else "none"))
-    print("- READY: {READY}, PARTIAL: {PARTIAL}, ROUTED_ONLY: {ROUTED_ONLY}, MISSING: {MISSING}".format(**counts))
+    print("- Recognized by CLI: {RECOGNIZED}, missing: {MISSING}".format(**counts))
     print()
-    print("| Type | Status | Adapter | Model | Groups |")
-    print("| --- | --- | --- | --- | --- |")
+    print("| Type | Status | Groups |")
+    print("| --- | --- | --- |")
     for row in rows:
         print(
-            "| {type} | {status} | {adapter} | {model} | {groups} |".format(
+            "| {type} | {status} | {groups} |".format(
                 type=row["type"],
-                status=row.get("status", ""),
-                adapter=row.get("adapter", ""),
-                model=row.get("dataModel", ""),
-                groups=", ".join(row.get("groups") or []),
+                status=row["status"],
+                groups=", ".join(row["groups"]),
             )
         )
 

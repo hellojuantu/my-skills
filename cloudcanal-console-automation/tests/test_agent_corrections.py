@@ -46,16 +46,17 @@ class InventedGateCheck(unittest.TestCase):
         result = run_check(GATE_CHECK)
         self.assertEqual(0, result.returncode, result.stderr)
 
-    def test_old_release_result_fails(self):
+    def test_old_start_job_claim_gate_fails(self):
         with tempfile.TemporaryDirectory() as directory:
-            sample = Path(directory) / "autotest.py"
+            sample = Path(directory) / "datajob.py"
             sample.write_text(
-                'run["failurePhase"] = "RELEASE_STAGES_NOT_RUN"\n',
+                'def start_job(client, job_id):\n'
+                '    assert_mini_slot_free(client)\n',
                 encoding="utf-8",
             )
             result = run_check(GATE_CHECK, sample)
         self.assertEqual(1, result.returncode)
-        self.assertIn("RELEASE_STAGES_NOT_RUN", result.stderr)
+        self.assertIn("assert_mini_slot_free", result.stderr)
 
 
 class MiniHostCheck(unittest.TestCase):

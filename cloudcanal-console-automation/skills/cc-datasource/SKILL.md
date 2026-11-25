@@ -1,6 +1,6 @@
 ---
 name: cc-datasource
-description: Create, update, delete, and test CloudCanal datasources through a Console session. Use for datasource registration, not for creating jobs or N×N batch tests.
+description: Create, update, delete, and test CloudCanal datasources through a Console session. Use for datasource registration and connection checks.
 ---
 
 # Datasource Automation

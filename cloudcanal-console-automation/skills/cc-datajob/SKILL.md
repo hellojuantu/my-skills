@@ -1,6 +1,6 @@
 ---
 name: cc-datajob
-description: Create CloudCanal data jobs and change subscriptions through the Console API. Use for job creation and subscription edits, not for start, stop, position changes, or N×N batch tests.
+description: Create CloudCanal data jobs and change subscriptions through the Console API.
 ---
 
 # Data Job Automation
@@ -16,9 +16,9 @@ python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" create-job \
   --base-url "$CC_BASE_URL" --cookie-file "$CC_COOKIE_FILE" \
   --cluster-id 1 \
   --source-ds-id 10 --target-ds-id 11 \
-  --source-db auto_test --target-db auto_test \
+  --source-db dev_demo --target-db dev_demo \
   --table src_table=dst_table \
-  --mode full-sync --job-name auto_test_sync \
+  --mode full-sync --job-name dev_demo_sync \
   --non-interactive --dry-run
 ```
 
@@ -30,7 +30,7 @@ python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" create-job \
   --cluster-id 1 \
   --source-ds-id 20 --target-ds-id 10 \
   --source-type kafka --target-type mysql \
-  --target-db auto_test \
+  --target-db dev_demo \
   --table demo_topic=demo_table \
   --mode increment --non-interactive --dry-run
 ```
@@ -39,11 +39,11 @@ Use `--source-schema-json`, `--target-schema-json`, `--mapping-json`, `--process
 
 For RDB sources, the builder queries selected columns and writes them into `sourceSchema`, matching the frontend create flow. Do not create a full/full-sync RDB job with empty table `columns`; the command fails early because that payload can make full sync write target default values even though incremental sync later looks healthy.
 
-The create API returning `dataJobId` does not mean the backend async creation flow is complete. For complex sources, creation continues in a console job such as `DATA_JOB_CREATE`; wait for the saved job/console job to finish before starting, running faker data, or adding check children. If the async flow fails, query the console job summary first and record `consoleJobId`, failed step, handler, and message.
+The create API returning `dataJobId` does not mean the backend async creation flow is complete. For complex sources, creation continues in a console job such as `DATA_JOB_CREATE`; wait for the saved job/console job to finish before starting the job or adding check children. If the async flow fails, query the console job summary first and record `consoleJobId`, failed step, handler, and message.
 
 Datasource fields are copied into the job at create time. The job keeps its own `DATASOURCE` config entries such as `host`, `userName`, `password`, `useSSL`, `proxyMode`, and family-specific values. Changing the datasource object afterward only affects new jobs. For existing jobs, use the job config repair flow in `../cc-job-operations/SKILL.md`.
 
-When building new jobs, query and merge datasource-specific config from the console instead of hardcoding it. Current create-job/autotest behavior must preserve at least:
+When building new jobs, query and merge datasource-specific config from the console instead of hardcoding it. When building the request, preserve the following fields.
 
 - TiDB source: `pdHost` plus the selected `host`; a stale PD or SQL host causes async create to fail during TiDB CDC initialization.
 - StarRocks/Doris/SelectDB source or target: HTTP/FE/BE address fields such as `privateHttpHost`, `publicHttpHost`, `feHttpAddr`, and `beThriftAddr` when returned by datasource config.
@@ -116,7 +116,7 @@ python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" edit-job \
   --base-url "$CC_BASE_URL" --cookie-file "$CC_COOKIE_FILE" \
   --cluster-id 1 --job-id 21 \
   --add-table src_table=dst_table \
-  --source-db auto_test --target-db auto_test \
+  --source-db dev_demo --target-db dev_demo \
   --dry-run
 ```
 
@@ -127,7 +127,7 @@ python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" edit-job \
   --base-url "$CC_BASE_URL" --cookie-file "$CC_COOKIE_FILE" \
   --cluster-id 1 --job-id 21 \
   --remove-table old_table \
-  --source-db auto_test \
+  --source-db dev_demo \
   --dry-run
 ```
 

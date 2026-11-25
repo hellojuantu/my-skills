@@ -1,6 +1,6 @@
 ---
 name: cc-frontend-parity
-description: Build automation parameters from CloudCanal frontend requests and engine-specific cases. Use for an unverified datasource pair or request body, not for running a batch.
+description: Build automation parameters from CloudCanal frontend requests and engine-specific cases. Use for an unverified datasource pair or request body.
 ---
 
 # Frontend Parity Notes
@@ -38,7 +38,9 @@ python3 "$CLOUDCANAL_SKILL/scripts/audit_frontend_datasource_types.py" \
   --format markdown
 ```
 
-For the narrower datasource/job/operation surface, add `--core`. The default audit scans every `src/services/http/api/*.js` file but only reports CloudCanal-relevant `/cloudcanal` service paths plus CloudCanal datasource `/rdp` paths, so CloudCanal log, worker, monitor, cluster, auth, and related page APIs remain visible without pulling in ClouDDM endpoints.
+The datasource type audit compares frontend types against the types recognized by the Console CLI.
+
+For the narrower datasource/job/operation surface in `audit_frontend_parity.py`, add `--core`. The default audit scans every `src/services/http/api/*.js` file but only reports CloudCanal-relevant `/cloudcanal` service paths plus CloudCanal datasource `/rdp` paths, so CloudCanal log, worker, monitor, cluster, auth, and related page APIs remain visible without pulling in ClouDDM endpoints.
 
 Interpretation:
 
@@ -84,9 +86,9 @@ Do not hardcode based only on product names. The automation mirrors the current 
 - hasSchema: Oracle/PostgreSQL/Hana/SQLServer/Db2/Tunnel/Hudi/file-like and related PG-compatible families.
 - noDb: Kudu, MQ, Redis, ElasticSearch, RagApi, DynamoDB.
 
-Frontend routing is not the same as local test-data readiness. `RagApi` maps like a topic target in create-job payloads (`TABLE_TOPIC`) and is `noDb/noStruct/noColumn`; LLM providers such as OpenAI/DashScope/Bedrock are datasource/config surfaces, not generic CloudCanal table stores. Do not invent a `/collections` or generic HTTP CRUD contract for them. Capture the frontend request or datasource kv contract, then add a dedicated adapter before exposing any named data-test behavior.
+`RagApi` uses `TABLE_TOPIC` for target mapping and belongs to the `noDb`, `noStruct`, and `noColumn` groups. For LLM providers such as OpenAI, DashScope, and Bedrock, read the datasource settings from the frontend request or dynamic KV definitions.
 
-Hive/Hudi/Iceberg/Paimon/DeltaLake/Kudu/MaxCompute/DataLakeFormation have catalog/table semantics and frontend-specific settings such as partition, table type, and sink options. Do not represent them with local JSONL files unless the datasource being tested is explicitly a file object source. Keep them routed but not local-data ready until a native adapter for the actual engine is implemented.
+For Hive, Hudi, Iceberg, Paimon, DeltaLake, Kudu, MaxCompute, and DataLakeFormation, use the catalog, table, partition, and sink options exposed by the frontend for the selected engine.
 
 When frontend groups change, update the Python constants before claiming parity.
 

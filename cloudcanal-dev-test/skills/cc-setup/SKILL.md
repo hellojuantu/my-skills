@@ -29,7 +29,7 @@ Host <MINI_SSH_HOST>
 
 `run_mini_test.py` 和 `slot_claim.py` 读这个文件。任一值为空，或远端短主机名和 `MINI_HOSTNAME` 不同，它们就拒绝执行。
 
-Console 会话、批测和 Lab 页面验收按 `MINI_HOSTNAME`、`MINI_TAILSCALE_NAME`、`MINI_SSH_HOST` 中的完整主机名识别 Mini。`run_mini_test.py` 会从这份文件把三个名称传给 Mini 上的测试进程。
+Console 会话和 Lab 页面验收按 `MINI_HOSTNAME`、`MINI_TAILSCALE_NAME`、`MINI_SSH_HOST` 中的完整主机名识别 Mini。`run_mini_test.py` 会从这份文件把三个名称传给 Mini 上的测试进程。
 
 ## 链接技能
 
