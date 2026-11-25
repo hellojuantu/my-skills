@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """Run the slot-claim behavior SlotClaim.tla models."""
 
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 import importlib.util
 import sys
 import tempfile
 import threading
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import patch
 
 
 def load_claim(path):
@@ -59,41 +60,93 @@ def check_lock(module, private):
     return ""
 
 
+@contextmanager
 def observe_locks(module):
-    calls = []
+    held = {}
     real = module.slot_lock
 
     @contextmanager
     def wrapped(private, slot, exclusive=True):
-        calls.append(bool(exclusive))
         with real(private, slot, exclusive=exclusive):
-            yield
+            key = private / f".claim-{slot}"
+            held[key] = (exclusive, object())
+            try:
+                yield
+            finally:
+                del held[key]
 
-    module.slot_lock = wrapped
-    return calls, real
+    with patch.object(module, "slot_lock", wrapped):
+        yield held
 
 
 def check_change_claim_takes_write_lock(module, private):
-    calls, real = observe_locks(module)
-    try:
-        result = module.change_claim(acquire_args(), private, {"01": {"consolePort": 8111}})
-    finally:
-        module.slot_lock = real
-    if not result.get("ok"):
-        return "acquire failed"
-    if True not in calls:
-        return "change_claim does not hold the write lock"
+    args = acquire_args()
+    directory = private / f".claim-{args.slot}"
+    registered = {args.slot: {"consolePort": 8111}}
+    events = []
+    read_claim, mkdir, replace, rename = module.read_claim, Path.mkdir, Path.replace, Path.rename
+
+    def read(path):
+        if path == directory:
+            events.append(("read", held.get(directory)))
+        return read_claim(path)
+
+    def create(path, *args, **kwargs):
+        if path == directory:
+            events.append(("mkdir", held.get(directory)))
+        return mkdir(path, *args, **kwargs)
+
+    def publish(path, target):
+        if target == directory / "owner.json":
+            events.append(("publish", held.get(directory)))
+        return replace(path, target)
+
+    def archive(path, target):
+        if path == directory:
+            events.append(("archive", held.get(directory)))
+        return rename(path, target)
+
+    with observe_locks(module) as held, ExitStack() as patches:
+        patches.enter_context(patch.object(module, "read_claim", read))
+        patches.enter_context(patch.object(Path, "mkdir", create))
+        patches.enter_context(patch.object(Path, "replace", publish))
+        patches.enter_context(patch.object(Path, "rename", archive))
+        for command, expected in (("acquire", ["read", "mkdir", "publish"]),
+                                  ("update", ["read", "publish"]), ("release", ["read", "archive"])):
+            args.command = command
+            args.phase = "testing"
+            args.reason = "completed"
+            events.clear()
+            result = module.change_claim(args, private, registered)
+            if not result.get("ok"):
+                return f"{command} failed"
+            if [operation for operation, _ in events] != expected:
+                return f"{command} did not perform the expected claim operations: {expected}"
+            read_lock = events[0][1]
+            if read_lock is None or not read_lock[0] or any(lock != read_lock for _, lock in events):
+                return f"change_claim does not hold the write lock across {command}"
+            if command == "acquire":
+                args.claim_id = result["claim"]["claimId"]
     return ""
 
 
 def check_status_takes_read_lock(module, private):
-    calls, real = observe_locks(module)
-    try:
-        module.status(private, {"01": {"consolePort": 8111}})
-    finally:
-        module.slot_lock = real
-    if not calls or any(calls):
-        return "status does not hold the read lock"
+    registered = {"01": {"consolePort": 8111}, "02": {"consolePort": 8112}}
+    expected = {private / f".claim-{slot}" for slot in registered}
+    reads = {}
+    real_read = module.read_claim
+
+    def read(directory):
+        reads[directory] = {path: lock for path, (exclusive, lock) in held.items() if not exclusive}
+        return real_read(directory)
+
+    with observe_locks(module) as held, patch.object(module, "read_claim", read):
+        module.status(private, registered)
+    if reads.keys() != expected or any(locks.keys() != expected for locks in reads.values()):
+        return "status does not hold the read lock for every slot in the snapshot"
+    first, second = reads.values()
+    if first != second:
+        return "status released a read lock between slots in the snapshot"
     return ""
 
 

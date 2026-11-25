@@ -2,7 +2,7 @@
 """Inspect and manage CloudCanal release claims on Mini."""
 
 import argparse
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from datetime import datetime, timezone
 import fcntl
 import hashlib
@@ -169,17 +169,17 @@ def slot_lock(private, slot, exclusive=True):
 
 def status(private, registered):
     claimed = {path.name.removeprefix(".claim-") for path in private.glob(".claim-*")}
+    slot_numbers = sorted(filter(valid_slot, registered.keys() | claimed), key=lambda value: (len(value), value))
     slots = []
-    for slot in sorted((registered.keys() | claimed), key=lambda value: (len(value), value)):
-        if not valid_slot(slot):
-            continue
-        directory = private / f".claim-{slot}"
-        with slot_lock(private, slot, exclusive=False):
+    with ExitStack() as locks:
+        for slot in slot_numbers:
+            locks.enter_context(slot_lock(private, slot, exclusive=False))
+        for slot in slot_numbers:
             try:
-                claim = read_claim(directory)
+                claim = read_claim(private / f".claim-{slot}")
             except (OSError, ValueError) as error:
                 claim = {"claimId": None, "phase": "unknown", "error": str(error)}
-        slots.append({"slot": slot, "consolePort": registered.get(slot, {}).get("consolePort"), "claim": claim})
+            slots.append({"slot": slot, "consolePort": registered.get(slot, {}).get("consolePort"), "claim": claim})
     all_registered_claimed = bool(registered) and all(row["claim"] is not None for row in slots if row["slot"] in registered)
     return {"ok": True, "slots": slots, "allRegisteredClaimed": all_registered_claimed}
 

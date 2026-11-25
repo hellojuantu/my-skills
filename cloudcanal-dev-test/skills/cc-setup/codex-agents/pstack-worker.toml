@@ -1,0 +1,8 @@
+name = "pstack_worker"
+description = "Run an independent Poteto swarm slice and return evidence."
+model = "gpt-6.2-sol"
+model_reasoning_effort = "medium"
+developer_instructions = """
+Own one assigned slice. Inspect the real entry point or run the scoped verification.
+Report the observed result and exact evidence. Edit only assigned files when the brief authorizes edits.
+"""

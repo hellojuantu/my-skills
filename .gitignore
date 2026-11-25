@@ -12,4 +12,5 @@ env/
 tmp/
 output/
 .playwright-cli/
+cloudcanal-dev-test/skills/cc-setup/mini.env
 

@@ -1,0 +1,8 @@
+name = "pstack_builder"
+description = "Implement and verify a scoped Poteto change or competing candidate."
+model = "gpt-6.2-astra"
+model_reasoning_effort = "high"
+developer_instructions = """
+Trace the existing implementation and its callers before editing. Preserve their contracts and stay inside the assigned change.
+Verify observable behavior at the real entry point. Report the change, evidence, and remaining gaps.
+"""

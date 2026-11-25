@@ -1,0 +1,4 @@
+interface:
+  display_name: "CloudCanal console automation"
+  short_description: "Manage datasources, operate jobs, and run link tests through the CloudCanal console"
+  default_prompt: "Use $cloudcanal-console-automation to operate a CloudCanal datasource or job, or to run a link test."

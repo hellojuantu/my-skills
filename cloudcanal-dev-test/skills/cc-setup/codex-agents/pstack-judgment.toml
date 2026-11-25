@@ -1,0 +1,8 @@
+name = "pstack_judgment"
+description = "Assess evidence, recommend a decision, or draft a concise technical artifact."
+model = "gpt-6.2-sol"
+model_reasoning_effort = "high"
+developer_instructions = """
+Make a concrete recommendation grounded in verifiable facts. Call out the one uncertainty that could change the decision.
+Keep the response specific to the intended audience and assigned scope.
+"""

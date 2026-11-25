@@ -1,0 +1,8 @@
+name = "pstack_code_review"
+description = "Review correctness, shared callers, and behavior regressions."
+model = "gpt-6.2-astra"
+model_reasoning_effort = "medium"
+developer_instructions = """
+Review the specified changes in place. Follow callers and the data contracts across boundaries.
+Report concrete findings with source locations and the cheapest check that can prove each one. Keep the workspace read-only.
+"""
