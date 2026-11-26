@@ -86,6 +86,19 @@ class LinkSkillsTest(unittest.TestCase):
         self.assertEqual(result.returncode, 1, result.stderr)
         self.assertEqual(os.readlink(self.dest), str(self.legacy))
 
+    def test_links_juantu_mode_when_invoked_through_the_installed_symlink(self):
+        for name in ("pstack", "cloudcanal-dev-test", "datasource-lab", "cloudcanal-console-automation"):
+            (self.install / name).symlink_to(self.checkout / name)
+        installed = self.install / "cloudcanal-dev-test/skills/cc-setup/scripts/link-skills.sh"
+        result = subprocess.run(
+            ["sh", str(installed)],
+            env={**os.environ, "TEST_INSTALL_DIR": str(self.install)},
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual((self.install / "juantu-mode").resolve(strict=True), self.checkout / "juantu-mode")
+
     def test_preserves_current_relative_link_and_existing_directory(self):
         target = os.path.relpath(self.checkout / "pstack", self.install)
         self.dest.symlink_to(target)

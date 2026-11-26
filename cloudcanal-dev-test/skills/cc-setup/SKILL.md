@@ -54,9 +54,11 @@ Console 会话和 Lab 页面按 `MINI_HOSTNAME`、`MINI_TAILSCALE_NAME`、`MINI_
 
 脚本把 `pstack`、`cloudcanal-dev-test`、`datasource-lab`、`cloudcanal-console-automation` 和 `juantu-mode` 链到 `~/.codex/skills/`。
 
-已经指向当前目录的软链会跳过。
+已经指向这次检出里对应技能目录的软链会跳过。
 
-指向同一检出里旧目录的软链会改过来。
+指向同一检出里 `.codex/skills/<技能>` 的软链，只有在安装目录里没有另一个同名检出时，才会改到技能目录。
+
+安装目录里已经有那个同名检出时，脚本停下来，并留下原来的链接。
 
 指向别处的链接会停下来，并打印要核对的路径。
 

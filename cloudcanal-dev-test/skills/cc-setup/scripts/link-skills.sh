@@ -1,8 +1,9 @@
 #!/bin/sh
 set -eu
 
-repo_dir=$(CDPATH= cd -- "$(dirname "$0")/../../../.." && pwd)
-repo_phys=$(CDPATH= cd -- "$repo_dir" && pwd -P)
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+repo_dir=$(CDPATH= cd -- "$script_dir/../../../.." && pwd -P)
+repo_phys=$repo_dir
 skills_dir=${HOME}/.codex/skills
 mkdir -p "$skills_dir"
 
