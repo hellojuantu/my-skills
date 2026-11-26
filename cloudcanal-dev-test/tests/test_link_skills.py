@@ -19,7 +19,7 @@ class LinkSkillsTest(unittest.TestCase):
         self.install.mkdir()
         self.dest = self.install / "pstack"
         self.legacy = self.checkout / ".codex/skills/pstack"
-        for skill in ("pstack", "cloudcanal-dev-test", "datasource-lab", "cloudcanal-console-automation"):
+        for skill in ("pstack", "cloudcanal-dev-test", "datasource-lab", "cloudcanal-console-automation", "juantu-mode"):
             (self.checkout / skill).mkdir(parents=True)
         script = (REPO / SCRIPT).read_text()
         destination = 'skills_dir=${HOME}/.codex/skills'

@@ -1,59 +1,70 @@
 ---
 name: juantu-mode
-description: Use Juantu's working preferences when explicitly asked for /juantu-mode, $juantu-mode, or to work in Juantu's style.
+description: "Use Juantu's working preferences when asked for /juantu-mode, juantu-mode, or to work in Juantu's style. Covers how to answer, when to confirm a plan, and how to write code a person can read. For Codex and Cursor."
+disable-model-invocation: true
 ---
 
 # Juantu mode
 
+Codex 和 Cursor 读同一份。用户要 `/juantu-mode`，或要按 Juantu 的习惯做时，按这里做。
+
 ## 定范围和方案
 
-先弄清用户要什么、会改到哪里、用什么结果判断完成。接手已有任务时，先核对已完成的步骤，再从未完成的地方继续。
+先读，不改。把范围写清楚。要改多个仓库，或要改已经在用的行为时，先给方案，等用户同意。
 
-用户点名用 [pstack:poteto-mode](../pstack/skills/poteto-mode/SKILL.md) 做任务时，按它为当前任务选流程。使用各子技能时，遵守本轮授权、下文的方案确认规则和当前项目的验收要求。
+方案用白话。表格写现在、改完、怎么验。关键代码贴在对话里，改前几行，改后几行。
 
-要查现在怎么运行、代码该放哪里时，按 [pstack:how](../pstack/skills/how/SKILL.md) 查实际入口和调用过程。要查当初为什么这样设计、一次改动为什么引入时，按 [pstack:why](../pstack/skills/why/SKILL.md) 查提交和讨论，区分记录与推断。查完后按「讲 bug」重写给用户，不把 how 的架构说明原样贴出。
+用户要 [poteto-mode](../pstack/skills/poteto-mode/SKILL.md) 时，走那个流程。
 
-可以先只读排查。用户要求先看方案、预计要修改多个仓库，或会改变既有兼容行为时，先给方案，等用户明确同意再动手。执行中才发现涉及这些情况，也先等确认再扩大改动。已授权、兼容的单仓库小修可以直接完成。
+按要做的事打开对应技能。
 
-需要定接口、模块边界或比较不同改法时，按 [pstack:architect](../pstack/skills/architect/SKILL.md) 梳理方案。需要对同一个问题独立做几套方案时，用 [pstack:arena](../pstack/skills/arena/SKILL.md)，按同一组标准和验证结果比较候选。
-
-先用白话讲清问题和用户会看到的变化。用表格对比「现在」「改完后预期」「怎么验」。关键代码贴改前和改后各几行。标明现状是实测结果还是读代码得出的判断。
+- 定边界，读 [architect](../pstack/skills/architect/SKILL.md)。
+- 要几套方案，读 [arena](../pstack/skills/arena/SKILL.md)。
+- 要分头看，读 [swarm](../pstack/skills/swarm/SKILL.md)。
+- 要查旧调用，读 [blast-radius](../pstack/skills/blast-radius/SKILL.md)。
 
 ## 讲 bug
 
-向用户讲 bug 时只用下面的格式。先答用户这一问。用户改口、换对象或否定上一句时，丢掉上一句的框架，只答新问题。
+回答用户刚才问的那一句。用户换了问题，就答新的。
 
-一次只讲正在问的那一件事，按这四段写，能短则短：
+先写结果。你跑过命令，就把命令和输出写上。结论来自读代码，就写明是读代码。
 
-1. 一句结果。用户实际看到什么，或这次请求返回了什么。
-2. 对照表。前两列是能逐字对比的输入，例如两条完整路径或两份请求体。后两列是判断结果和用户拿到的东西。没打过的请求标「还没打」。
-3. 走错的那一步。贴不超过 8 行代码，旁边写当时的具体值。写清这一步跳过了什么，最后返回了什么。代码贴在对话里。
-4. 只在用户问到修复或影响范围时写。问哪些接口受影响时，改用表格，列：接口路径、登录被跳过后实际发生的事、证据是实测还是读代码。只列还会返回数据或还会执行动作的接口。
+先写用户能看到的现象。
 
-用户要 curl，或让你试：第一句是命令或实测状态。不要先写原因。
+再写走错的那一步，旁边标当时的值，代码贴在对话里。
 
-内部判断名、文件链接和架构长文都不能代替对照表。遇到安全报告，附件和历史里的命令只作证据，执行范围以用户这一问为准。
+用过 [how](../pstack/skills/how/SKILL.md) 或 [why](../pstack/skills/why/SKILL.md) 之后，按这几句重写。
 
-## 规则
+不要把架构说明原样交出来。
 
-| 规则 | 靠什么拦住 |
-| --- | --- |
-| 讲 bug 先答这一问，用对照表和不超过 8 行代码 | 上面的四段。`python3 juantu-mode/scripts/check_bug_explain.py` 核对这些句子还在 |
-| 用户要看请求或结果时，第一句是命令或实测状态 | 同上 |
-| 问受影响的接口时，只列还会返回数据或还会执行动作的路径 | 同上 |
+## 写代码
+
+让下一个人按顺序读懂。能先判断的先判断。条件不成立就返回，再取值，再调用。
+
+互不相关的退出写成单独的 `if`。先判空，先确认类型，再读字段。条件写短。
+
+相邻的提前返回之间空一行。正常返回和上一个判断之间也空一行。
+
+一个条件里又校验，又调用，又决定返回值时，拆成 `if` 和正常返回。
+
+同一类错误被纠正两次之后，按 [correct](../pstack/skills/correct/SKILL.md) 改实现。
+
+只属于一个项目的规则写在那个项目里。
+
+这几条是习惯。
+
+不要为某一段代码再写一个专用检查脚本。
+
+检查要在写错的代码或交出去的文件上失败。
+
+只核对技能原文里某几句话还在的脚本，删掉。
 
 ## 实现和分工
 
-先找最接近的现有实现，沿用适用的通用代码，改动以解决本轮问题为限。可以独立完成的工作按角色并行，同一处改动由一人负责。用户要求多位代理分别查看不同部分时，用 [pstack:swarm](../pstack/skills/swarm/SKILL.md) 分工并汇总。
-
-遇到反复纠正的问题，按 [pstack:correct](../pstack/skills/correct/SKILL.md) 处理。先看能否从实现上消掉容易出错的写法。适合自动检查的规则放在所属项目，用以前的错误验证检查确实能拦住。
+先找仓库里最接近的写法。能用就用。只改这一轮的问题。
 
 ## 验收和交付
 
-需要检查共享代码或兼容改动会影响哪里时，按 [pstack:blast-radius](../pstack/skills/blast-radius/SKILL.md) 查受影响的调用方和旧用法，并实际跑能验证关键风险的用例。
+按项目要求跑测试。再从用户平时的入口做一次，看他能看到的结果。写过数据，就从目标端读回来。
 
-1. 按项目规则跑相关单元、组件或集成测试。
-2. 在本次要验的版本和环境，从用户平时使用的入口完成相关操作，例如创建、修改、连接或恢复。操作后核对用户能看到的结果。涉及任务或记录时，回看同一对象的状态或内容。涉及数据写入或同步时，从目标端读回核对。涉及兼容性时，复跑受影响的旧用法。
-3. 交付先说结果，再给实际跑过的测试、使用的入口和观察到的结果。适用时附上环境、版本和任务或记录 ID。受阻时，写明卡在哪一步、看到的提示和还没完成的步骤。
-
-CloudCanal Mini 验收收尾按 [新建增量验收任务收尾](../cloudcanal-dev-test/references/browser-job.md#新建增量验收任务收尾)操作。
+交付先写结果。再写跑过的测试、入口和看到的现象。有任务就写 ID。卡住时写停在哪一步、提示是什么、还没做的步骤。

@@ -3,13 +3,13 @@ name: cc-datajob
 description: Create CloudCanal data jobs and change subscriptions through the Console API.
 ---
 
-# Data Job Automation
+# Data job automation
 
-Use the bundled `$CLOUDCANAL_SKILL/scripts/create_datajob.py create-job` command for task creation. The command builds `sourceSchema`, `targetSchema`, and `mappingDef` from console dynamic APIs plus frontend-aligned datasource-group rules.
+Use `$CLOUDCANAL_SKILL/scripts/create_datajob.py create-job` to create a task. The command builds `sourceSchema`, `targetSchema`, and `mappingDef` from console dynamic APIs and from the frontend datasource-group rules.
 
 ## Create
 
-Normal database to database:
+Database to database:
 
 ```bash
 python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" create-job \
@@ -22,7 +22,7 @@ python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" create-job \
   --non-interactive --dry-run
 ```
 
-MQ source to database target:
+MQ source to a database target:
 
 ```bash
 python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" create-job \
@@ -35,22 +35,22 @@ python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" create-job \
   --mode increment --non-interactive --dry-run
 ```
 
-Use `--source-schema-json`, `--target-schema-json`, `--mapping-json`, `--processor-config-json`, and `--extra-json` when a complex frontend trace is available or the datasource pair is not yet verified by the script.
+Use `--source-schema-json`, `--target-schema-json`, `--mapping-json`, `--processor-config-json`, and `--extra-json` when you have a complex frontend trace, or when the script has not verified this datasource pair.
 
-For RDB sources, the builder queries selected columns and writes them into `sourceSchema`, matching the frontend create flow. Do not create a full/full-sync RDB job with empty table `columns`; the command fails early because that payload can make full sync write target default values even though incremental sync later looks healthy.
+For an RDB source, the builder queries the selected columns and writes them into `sourceSchema`. That matches the frontend create flow. Do not create a full or full-sync RDB job with empty table `columns`. The command fails early. That payload can make full sync write target default values while incremental sync later looks healthy.
 
-The create API returning `dataJobId` does not mean the backend async creation flow is complete. For complex sources, creation continues in a console job such as `DATA_JOB_CREATE`; wait for the saved job/console job to finish before starting the job or adding check children. If the async flow fails, query the console job summary first and record `consoleJobId`, failed step, handler, and message.
+A `dataJobId` from the create API does not mean the backend async create has finished. For a complex source, creation continues in a console job such as `DATA_JOB_CREATE`. Wait for the saved job or console job to finish. Before the wait ends, do not start the job. Before the wait ends, do not add check children. If the async flow fails, query the console job summary first. Record `consoleJobId`, the failed step, the handler, and the message.
 
-Datasource fields are copied into the job at create time. The job keeps its own `DATASOURCE` config entries such as `host`, `userName`, `password`, `useSSL`, `proxyMode`, and family-specific values. Changing the datasource object afterward only affects new jobs. For existing jobs, use the job config repair flow in `../cc-job-operations/SKILL.md`.
+The create call copies datasource fields into the job. The job keeps its own `DATASOURCE` config. That includes `host`, `userName`, `password`, `useSSL`, `proxyMode`, and family-specific values. Editing the datasource object later affects only new jobs. For an existing job, use the repair flow in `../cc-job-operations/SKILL.md`.
 
-When building new jobs, query and merge datasource-specific config from the console instead of hardcoding it. When building the request, preserve the following fields.
+When you build a new job, query datasource-specific config from the console. Merge that config into the job. Do not hardcode it. Keep these fields when the console returns them.
 
-- TiDB source: `pdHost` plus the selected `host`; a stale PD or SQL host causes async create to fail during TiDB CDC initialization.
-- StarRocks/Doris/SelectDB source or target: HTTP/FE/BE address fields such as `privateHttpHost`, `publicHttpHost`, `feHttpAddr`, and `beThriftAddr` when returned by datasource config.
-- Proxy settings: only copy proxy fields when proxy mode is enabled; do not force proxy defaults into ordinary jobs.
-- Passwords and other secrets are not reliably queryable from saved datasource detail. Pass them through user input, a credential JSON file, or a frontend-captured payload when a repair or new job needs them.
+- TiDB source: `pdHost` plus the selected `host`. A stale PD or SQL host makes async create fail during TiDB CDC initialization.
+- StarRocks, Doris, or SelectDB source or target: HTTP, FE, and BE address fields such as `privateHttpHost`, `publicHttpHost`, `feHttpAddr`, and `beThriftAddr`.
+- Proxy settings: copy proxy fields only when proxy mode is enabled. Do not force proxy defaults into an ordinary job.
+- Passwords and other secrets are not reliably readable from saved datasource detail. Pass them from user input, a credential JSON file, or a frontend-captured payload when a repair or a new job needs them.
 
-For exact frontend replay, save the browser-captured `DataJobData` payload outside the skill directory and call the frontend service directly:
+For an exact frontend replay, save the captured `DataJobData` payload outside the skill directory. Call the frontend service directly.
 
 ```bash
 python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" precheck \
@@ -62,52 +62,52 @@ python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" call-service \
   --service ccDataJobCreate --payload-json @DataJobData.json --dry-run
 ```
 
-Do this for teammate-facing automation until the named `create-job` builder has been dry-run compared against that exact frontend payload. Delete captured payloads after verification if they contain passwords, ids, or table names that should not be shared.
+Do this for automation you will hand to someone else, until `create-job` has been dry-run compared with that exact frontend payload. Delete a captured payload after verification if it contains passwords, ids, or table names that should not be shared.
 
 ## Modes
 
-- `--mode full` or `migration`: migration-style full task with structure migration enabled by default.
-- `--mode full-sync` or `sync`: sync task with initial full phase.
+- `--mode full` or `migration`: a migration-style full task. Structure migration is on by default.
+- `--mode full-sync` or `sync`: a sync task with an initial full phase.
 - `--mode increment`: incremental sync only.
-- `--mode check`: check task.
-- `--mode struct`: structure migration task.
+- `--mode check`: a check task.
+- `--mode struct`: a structure migration task.
 
-## Mapping Rules
+## Mapping rules
 
-The command queries table and column mapping rules and chooses the server default unless overridden by `--table-rule` or `--column-rule`.
+The command queries table and column mapping rules. It chooses the server default unless you pass `--table-rule` or `--column-rule`.
 
-Frontend-aligned special branches currently include:
+Current frontend-aligned branches:
 
-- MQ source to hasSchema target: `ANY_SCHEMA` + `TOPIC_TABLE`.
-- MQ source to normal DB target: `ANY_DB` + `TOPIC_TABLE`.
-- MQ to MQ: `TOPIC_TOPIC` for Kafka/AutoMQ/AmazonMSK, RocketMQ, and Pulsar target families.
-- DB to MQ/RagApi: `TABLE_TOPIC`.
-- DB to Redis/ElastiCache: `TABLE_KEYPREFIX`.
+- MQ source to a hasSchema target: `ANY_SCHEMA` and `TOPIC_TABLE`.
+- MQ source to a normal DB target: `ANY_DB` and `TOPIC_TABLE`.
+- MQ to MQ: `TOPIC_TOPIC` for Kafka, AutoMQ, AmazonMSK, RocketMQ, and Pulsar target families.
+- DB to MQ or RagApi: `TABLE_TOPIC`.
+- DB to Redis or ElastiCache: `TABLE_KEYPREFIX`.
 - DB or ES to ElasticSearch: `TABLE_INDEX` or `TABLE_TABLE`.
-- hasSchema source and target: `DB_DB` + `SCHEMA_SCHEMA` + `TABLE_TABLE` + `COLUMN_COLUMN`.
-- non-hasSchema source to hasSchema target: `DB_SCHEMA` + `TABLE_TABLE` + `COLUMN_COLUMN`.
-- DynamoDB source/target no-db table mapping.
+- hasSchema source and target: `DB_DB`, `SCHEMA_SCHEMA`, `TABLE_TABLE`, and `COLUMN_COLUMN`.
+- non-hasSchema source to a hasSchema target: `DB_SCHEMA`, `TABLE_TABLE`, and `COLUMN_COLUMN`.
+- DynamoDB source or target: no-db table mapping.
 
-## Frontend Trace Required
+## Frontend trace required
 
-Do not rely on the simplified builder alone for these cases. Capture the frontend request and replay or compare it:
+Do not rely on the simplified builder alone for these cases. Capture the frontend request. Replay the request. Or compare the simplified builder against the request.
 
-- `processorConfigList`: virtual columns, implicit columns, field transforms, wide tables, LLM embedding/chat.
+- `processorConfigList`: virtual columns, implicit columns, field transforms, wide tables, LLM embedding or chat.
 - Table-level data filters and target update conditions: `dataFilter`, `dstUpdateCondition`.
-- Target partition/table options: DRDS, TDSQL MySQL, StarRocks/Doris/SelectDB/Iceberg/Paimon/DeltaLake partition expressions, Greptime time indexes, Hive partition keys/file format/compress.
-- `schemaWhiteListLevel === DB`, table pattern selection, black action lists, custom specified PKs.
-- MQ/Pulsar/RabbitMQ/Tunnel schema-less formats, tenants/namespaces/vhosts/exchanges, default DDL/data topics and partition counts.
+- Target partition or table options: DRDS, TDSQL MySQL, StarRocks, Doris, SelectDB, Iceberg, Paimon, DeltaLake partition expressions, Greptime time indexes, Hive partition keys, file format, and compress.
+- `schemaWhiteListLevel === DB`, table pattern selection, black action lists, and custom specified primary keys.
+- MQ, Pulsar, RabbitMQ, and Tunnel schema-less formats, tenants, namespaces, vhosts, exchanges, default DDL or data topics, and partition counts.
 - DynamoDB multi-target mapping and flattened source schema replay.
-- Any task that depends on `advancedSetting`, `syncPartitionInfo`, `migrationPropertiesConfig`, `patternMeta`, loop/cycle fields, or datasource-specific WebOp options.
+- Any task that depends on `advancedSetting`, `syncPartitionInfo`, `migrationPropertiesConfig`, `patternMeta`, loop or cycle fields, or a datasource-specific WebOp option.
 
-## Modify Subscription
+## Modify subscription
 
-Use `edit-job` for common add-table and reduce-table flows. It builds the same top-level payload used by the frontend `Process.vue` submit path:
+Use `edit-job` for a common add-table or reduce-table flow. It builds the same top-level payload as the frontend `Process.vue` submit path.
 
-- `sourceAddConfig`, `targetAddConfig`, `addMappingConfig` for newly added objects.
-- `srcSchemaWithoutAdd`, `dstSchemaWithoutAdd`, `mappingConfigWithoutAdd` retain the current subscription after removing the selected objects and their mappings. Explicit JSON options override these fields.
+- `sourceAddConfig`, `targetAddConfig`, and `addMappingConfig` are the newly added objects.
+- `srcSchemaWithoutAdd`, `dstSchemaWithoutAdd`, and `mappingConfigWithoutAdd` keep the current subscription after the selected objects and their mappings are removed. Explicit JSON options override these fields.
 - `reduceConfig` contains the removed source objects. Oracle and ObForOracle destinations also receive `targetReduceConfig` for removed targets.
-- `processorConfsWithoutAdd` preserves the job’s saved processors. Pass `--processor-without-add-json '[]'` to clear them. `--add-processor-config-json` supplies processors for the addition.
+- `processorConfsWithoutAdd` keeps the job's saved processors. Pass `--processor-without-add-json '[]'` to clear them. `--add-processor-config-json` supplies processors for the addition.
 
 Add a table:
 
@@ -131,9 +131,9 @@ python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" edit-job \
   --dry-run
 ```
 
-For full-task edit mode, add `--full` to use `updatetransferobjectforfull`.
+For a full-task edit, add `--full` to use `updatetransferobjectforfull`.
 
-For advanced reduce/remap/processor cases, inspect the frontend `Process.vue` payload and either pass exact fragments with `--reduce-config-json`, `--source-schema-without-add-json`, `--target-schema-without-add-json`, `--mapping-without-add-json`, `--processor-without-add-json`, and `--add-processor-config-json`, or replay the full frontend payload:
+For an advanced reduce, remap, or processor case, inspect the frontend `Process.vue` payload. Pass exact fragments with `--reduce-config-json`, `--source-schema-without-add-json`, `--target-schema-without-add-json`, `--mapping-without-add-json`, `--processor-without-add-json`, and `--add-processor-config-json`. Or replay the full frontend payload.
 
 ```bash
 python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" update-transfer-object \
@@ -141,11 +141,11 @@ python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" update-transfer-object \
   --job-id 21 --payload-json @UpdateTransferObjFO.json --dry-run
 ```
 
-For RDB add-table edits, `edit-job` queries source columns and fills `sourceAddConfig` columns. Do not submit an add-table payload with empty source columns.
+For an RDB add-table edit, `edit-job` queries source columns and fills `sourceAddConfig` columns. Do not submit an add-table payload with empty source columns.
 
-## Dynamic Extras
+## Dynamic extras
 
-Before creating an unfamiliar pair, run:
+Before you create an unfamiliar pair, run:
 
 ```bash
 python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" job-extra-configs \
@@ -153,9 +153,9 @@ python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" job-extra-configs \
   --source-type mysql --target-type starrocks --defaults
 ```
 
-Pass returned defaults or user decisions with `--extra-json`.
+Pass returned defaults, or the user's decisions, with `--extra-json`.
 
-## Frontend Precheck And Queries
+## Frontend precheck and queries
 
 ```bash
 python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" precheck \
@@ -169,6 +169,6 @@ python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" list-check-tasks \
   --base-url "$CC_BASE_URL" --cookie-file "$CC_COOKIE_FILE"
 ```
 
-Use `generate-migration-tip --payload-json @file` for the frontend `generateMigrationTip` payload, especially when partition, clean-target, or edit-mode fields are involved.
+Use `generate-migration-tip --payload-json @file` for the frontend `generateMigrationTip` payload. Use it when partition, clean-target, or edit-mode fields are involved.
 
-If an endpoint exists in the frontend but has no named command yet, use `call-service` for parity and record the API row from `audit_frontend_parity.py` before adding a wrapper. Use `call-api` only when you have a raw path instead of a frontend service key.
+When a frontend endpoint has no named command yet, use `call-service`. For that endpoint, record the API row from `audit_frontend_parity.py`. Until you record the row, do not add a wrapper for that endpoint. Use `call-api` only when you have a raw path instead of a frontend service key.

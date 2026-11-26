@@ -6,7 +6,7 @@ repo_phys=$(CDPATH= cd -- "$repo_dir" && pwd -P)
 skills_dir=${HOME}/.codex/skills
 mkdir -p "$skills_dir"
 
-for skill in pstack cloudcanal-dev-test datasource-lab cloudcanal-console-automation; do
+for skill in pstack cloudcanal-dev-test datasource-lab cloudcanal-console-automation juantu-mode; do
   source_dir=$repo_dir/$skill
   dest=$skills_dir/$skill
   expected=$(CDPATH= cd -- "$source_dir" && pwd -P)

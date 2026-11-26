@@ -9,6 +9,6 @@
 3. [cloudcanal-dev-test](cloudcanal-dev-test/SKILL.md)。Air 或 Pro 开发，Mini 上测试和验收。
 4. [cloudcanal-console-automation](cloudcanal-console-automation/SKILL.md)。在已登录的 Console 上管理数据源、操作任务和核对结果。
 5. [datasource-lab](datasource-lab/SKILL.md)。Mini 上的测试库、连接和巡检。
-6. [juantu-mode](juantu-mode/SKILL.md)。用白话给方案，并按实际用户操作验收。
+6. [juantu-mode](juantu-mode/SKILL.md)。用户要求按 Juantu 的习惯做时读这一份。Codex 和 Cursor 用同一份。
 
 各技能自己的 `skills/` 放单项流程。入口技能用路径把你带到那里。

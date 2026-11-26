@@ -3,9 +3,9 @@ name: cc-job-operations
 description: Operate CloudCanal jobs, config, schedules, and positions through the Console API. Use for start, stop, retry, config repair, and position changes, not for creating datasources.
 ---
 
-# Job Operations
+# Job operations
 
-Use the operation commands after resolving the console URL, cookie, and object ids.
+Resolve the console URL, cookie, and object ids before you run these commands.
 
 ## Lifecycle
 
@@ -25,13 +25,13 @@ python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" operate-jobs \
   --action restart --job-id 21,22 --dry-run
 ```
 
-Use `continue-job` only for the same post-structure state the frontend handles with `fsmStart`: structure migration is complete, `fsmActive=false`, and full/increment tasks are still waiting. For ordinary lifecycle work use `start-job`, `stop-job`, `restart-job`, or `replay-job`.
+Use `continue-job` only for the post-structure state the frontend handles with `fsmStart`. Structure migration is complete, `fsmActive=false`, and the full or increment tasks are still waiting. For ordinary lifecycle work use `start-job`, `stop-job`, `restart-job`, or `replay-job`.
 
 Run these commands against the existing slot's Console. They do not read or release a slot claim. For a deployment and its handoff, follow the [Mini release workflow](../../../cloudcanal-dev-test/references/mini-release.md).
 
-## FSM And Delete Cleanup
+## FSM and delete cleanup
 
-The frontend has a separate system FSM page. When a job or check child cannot be deleted because its FSM is still active, do not guess datajob paths such as `inactivefsm` or `stopfsm`. Use the wrapped FSM page endpoints:
+The frontend has a separate system FSM page. When a job or check child cannot be deleted because its FSM is still active, do not guess paths such as `inactivefsm` or `stopfsm`. Use the wrapped FSM page endpoints.
 
 ```bash
 python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" list-fsm \
@@ -43,7 +43,7 @@ python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" inactivate-fsm \
   --job-id 82
 ```
 
-For cleanup requested by the user, prefer one command that handles child jobs first, ignores harmless "not running" stop errors, inactivates FSM when needed, waits briefly for `WAIT_START`/`RUNNING` tasks to leave the backend delete-blocked states, then deletes:
+When the user asks for cleanup, prefer one command. It handles child jobs first. It ignores a harmless "not running" stop error. It inactivates the FSM when needed. It waits briefly for `WAIT_START` or `RUNNING` tasks to leave the states that block delete. Then it deletes.
 
 ```bash
 python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" delete-job \
@@ -51,11 +51,11 @@ python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" delete-job \
   --job-id 81 --delete-children --stop-first --inactivate-fsm
 ```
 
-This is especially important for check child jobs after CloudCanal check replay. `WAIT_START` is a normal scheduler state, not a cue to call `activefsm` again. If deletion still fails, query `query-fsm --job-id JOB_ID` and `query-job --job-id JOB_ID`, then report the backend error with the FSM id and current task status.
+This matters for check child jobs after a CloudCanal check replay. `WAIT_START` is a normal scheduler state. It is not a cue to call `activefsm` again. If deletion still fails, query `query-fsm --job-id JOB_ID`. Also query `query-job --job-id JOB_ID`. Report the backend error with the FSM id and the current task status.
 
 ## Logs
 
-Task log tail, with task id resolved from job state or `--task-type`:
+Tail a task log. Resolve the task id from job state. Or pass `--task-type`.
 
 ```bash
 python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" tail-task-log \
@@ -79,9 +79,9 @@ python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" grep-operation-log \
   --operation-id 12345
 ```
 
-`--contains` filters matching log lines, not whole files, so it is suitable for quick `ERROR` checks.
+`--contains` filters matching log lines. It does not filter whole files. Use it for a quick `ERROR` check.
 
-Async console job logs and retry state:
+Async console job logs and retry:
 
 ```bash
 python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" query-console-job \
@@ -93,7 +93,7 @@ python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" operate-console-job \
   --action retry --console-job-id 100 --console-task-id 200 --dry-run
 ```
 
-Use this for create-job async failures such as `init TiDB CDC`, `CreateFSM`, or scheduler tasks. The summary prints failed console task ids so the retry can target the same frontend endpoint.
+Use this for create-job async failures such as `init TiDB CDC`, `CreateFSM`, or scheduler tasks. The summary prints failed console task ids so the retry hits the same frontend endpoint.
 
 ## Configs
 
@@ -105,11 +105,11 @@ python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" update-job-configs --base-
 python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" export-job-config --base-url "$CC_BASE_URL" --cookie-file "$CC_COOKIE_FILE" --job-id 21 --dry-run
 ```
 
-Use `job-config-template --preview` before applying a template.
+Use `job-config-template --preview` before you apply a template.
 
-### Repair Copied Datasource Configs
+### Repair copied datasource configs
 
-Datajobs store a snapshot of datasource connection information. If a datasource is edited after a job was created, the existing job still uses the old copied values. List each affected name and check the saved value, endpoint and config type.
+A data job stores a snapshot of datasource connection information. If you edit a datasource after the job was created, the existing job still uses the old copied values. List each affected name. Check the saved value, endpoint, and config type.
 
 ```bash
 python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" list-job-configs \
@@ -117,7 +117,7 @@ python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" list-job-configs \
   --job-id 21 --config-name host
 ```
 
-Update only the affected job entries. Use `NAME:END_POINT_TYPE:CONFIG_TYPE:value` with the saved entry's `endPointType` and `configType`. For a datasource field such as a source host, these are `SOURCE` and `DATASOURCE`. Get available `--tag` filters from `list-job-config-tags`.
+Update only the affected job entries. Use `NAME:END_POINT_TYPE:CONFIG_TYPE:value` with the saved entry's `endPointType` and `configType`. For a source host those are `SOURCE` and `DATASOURCE`. Get `--tag` filters from `list-job-config-tags`.
 
 ```bash
 python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" update-job-configs \
@@ -129,7 +129,7 @@ python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" update-job-configs \
   --dry-run
 ```
 
-After applying the config update, retry the failed async console task:
+After the config update, retry the failed async console task.
 
 ```bash
 python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" operate-console-job \
@@ -137,11 +137,11 @@ python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" operate-console-job \
   --action retry --console-job-id 100 --console-task-id 200
 ```
 
-If the job failed before or during creation and the test data was already initialized against the old datasource endpoint, reinitialize the temporary source/target namespace on the new endpoint before retrying, or delete and recreate the job for a clean test. Retrying only the async task repairs configuration; it does not move old test schemas, topics, indexes, or files between database hosts.
+If the job failed before or during creation, and the test data was initialized against the old endpoint, choose one option. Reinitialize the temporary source or target namespace on the new endpoint before you retry. Or delete the job. Then create it again. Retrying the async task repairs configuration. It does not move old schemas, topics, indexes, or files between hosts.
 
 ## Positions
 
-Query dynamic position form options first:
+Query the dynamic position form first.
 
 ```bash
 python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" position-ops \
@@ -149,7 +149,7 @@ python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" position-ops \
   --task-id 123 --job-id 21
 ```
 
-Fetch/update/reset:
+Fetch, update, or reset:
 
 ```bash
 python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" fetch-current-pos --base-url "$CC_BASE_URL" --cookie-file "$CC_COOKIE_FILE" --task-id 123 --pos-type MYSQL_LOG_FILE_POS
@@ -165,7 +165,7 @@ python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" time-schedule --base-url "
 python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" manual-schedule --base-url "$CC_BASE_URL" --cookie-file "$CC_COOKIE_FILE" --data-task-id 1001 --old-worker-id 1 --target-worker-id 2 --dry-run
 ```
 
-## Follow-Up Jobs
+## Follow-up jobs
 
 ```bash
 python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" can-add-revise-task --base-url "$CC_BASE_URL" --cookie-file "$CC_COOKIE_FILE" --job-id 21 --dry-run
@@ -175,4 +175,4 @@ python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" attach-incre-task --base-u
 python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" detach-incre-task --base-url "$CC_BASE_URL" --cookie-file "$CC_COOKIE_FILE" --job-id 21 --dry-run
 ```
 
-For frontend endpoints not yet wrapped, prefer `call-service --service SERVICE --payload-json @payload.json --dry-run`; use `call-api --path PATH` when you only have the raw DevTools URL. `--set jobId=21` parses JSON scalars, so numbers and booleans remain typed.
+For a frontend endpoint that is not wrapped yet, use `call-service --service SERVICE --payload-json @payload.json --dry-run`. Use `call-api --path PATH` when you only have the raw DevTools URL. `--set jobId=21` parses JSON scalars, so numbers and booleans stay typed.

@@ -3,7 +3,7 @@ name: cc-frontend-parity
 description: Build automation parameters from CloudCanal frontend requests and engine-specific cases. Use for an unverified datasource pair or request body.
 ---
 
-# Frontend Parity Notes
+# Frontend parity notes
 
 The frontend source is the contract for payload shape. From the CloudCanal workspace root, set the frontend checkout for this session.
 
@@ -13,20 +13,20 @@ export CLOUDCANAL_WEB_DIR="$(cd clouddm-web && pwd -P)"
 
 For a standalone frontend checkout, pass its path with `--frontend-dir`.
 
-`clouddm-web` contains both CloudCanal and ClouDDM UI code. This skill only targets CloudCanal console automation: include `/cloudcanal/...` service paths and the CloudCanal datasource-management `/rdp/...` paths from `datasource.js` and `constant.js`; ignore `/clouddm/...` services and unrelated RDP account/SaaS/system APIs.
+`clouddm-web` contains both CloudCanal and ClouDDM UI code. This skill covers CloudCanal console automation only. Include `/cloudcanal/...` service paths and the CloudCanal datasource-management `/rdp/...` paths from `datasource.js` and `constant.js`. Ignore `/clouddm/...` services and unrelated RDP account, SaaS, and system APIs.
 
 Primary files:
 
-- `src/components/function/mixin/createJobMixin.js`: create-task `sourceSchema`, `targetSchema`, `mappingDef`, processor config assembly.
-- `src/views/data/Process.vue`: edit subscription payload, `addMappingConfig`, `sourceAddConfig`, `targetAddConfig`, without-add configs.
-- `src/views/dataSource/AddDataSource.vue`: RDP datasource add multipart parts and datasource-specific security fields.
-- `src/views/dataSource/DataSource.vue`: datasource update desc/account/AKSK/host/delete calls.
-- `src/services/http/api/dataJob.js`, `datasource.js`, `webOp.js`, `fsm.js`: endpoint path constants.
-- `src/views/dataSourceGroup.json`: datasource groups such as `mq`, `hasSchema`, `noDb`, `redis`, `es`, `noColumn`.
+- `src/components/function/mixin/createJobMixin.js` builds create-task `sourceSchema`, `targetSchema`, `mappingDef`, and processor config.
+- `src/views/data/Process.vue` is the edit-subscription payload, including `addMappingConfig`, `sourceAddConfig`, `targetAddConfig`, and the without-add configs.
+- `src/views/dataSource/AddDataSource.vue` is the RDP datasource add multipart parts and datasource-specific security fields.
+- `src/views/dataSource/DataSource.vue` is the datasource update for description, account, AKSK, host, and delete.
+- `src/services/http/api/dataJob.js`, `datasource.js`, `webOp.js`, and `fsm.js` hold endpoint path constants.
+- `src/views/dataSourceGroup.json` holds groups such as `mq`, `hasSchema`, `noDb`, `redis`, `es`, and `noColumn`.
 
-## Audit Script
+## Audit script
 
-Before saying the skill is aligned with a frontend checkout, run:
+Before you say the skill matches a frontend checkout, run:
 
 ```bash
 python3 "$CLOUDCANAL_SKILL/scripts/audit_frontend_parity.py" \
@@ -38,17 +38,17 @@ python3 "$CLOUDCANAL_SKILL/scripts/audit_frontend_datasource_types.py" \
   --format markdown
 ```
 
-The datasource type audit compares frontend types against the types recognized by the Console CLI.
+The datasource type audit compares frontend types with the types the Console CLI recognizes.
 
-For the narrower datasource/job/operation surface in `audit_frontend_parity.py`, add `--core`. The default audit scans every `src/services/http/api/*.js` file but only reports CloudCanal-relevant `/cloudcanal` service paths plus CloudCanal datasource `/rdp` paths, so CloudCanal log, worker, monitor, cluster, auth, and related page APIs remain visible without pulling in ClouDDM endpoints.
+For the narrower datasource, job, and operation surface in `audit_frontend_parity.py`, add `--core`. The default audit scans every `src/services/http/api/*.js` file. It reports CloudCanal `/cloudcanal` service paths and CloudCanal datasource `/rdp` paths. CloudCanal log, worker, monitor, cluster, auth, and related page APIs stay visible. ClouDDM endpoints stay out.
 
-Interpretation:
+Read the labels this way.
 
-- `wrapped`: the endpoint has a named Python command or helper.
-- `call-service`: the endpoint is callable by frontend service key, but not yet by a named command.
-- `intentional-not-wrapped`: manual FSM activation endpoints; do not expose these as normal operations.
+- `wrapped` means the endpoint has a named Python command or helper.
+- `call-service` means you can call the endpoint by frontend service key, but not yet by a named command.
+- `intentional-not-wrapped` means a manual FSM activation endpoint. Do not expose these as normal operations.
 
-For `call-service` rows that become common workflows, inspect the frontend payload and add a named command. Until then, use the frontend service key:
+When a `call-service` row becomes a common workflow, read the frontend payload. When that row becomes a common workflow, add a named command. Until then, use the frontend service key.
 
 ```bash
 python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" list-services \
@@ -60,11 +60,11 @@ python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" call-service \
   --set jobId=21 --dry-run
 ```
 
-If duplicate service keys exist, pass `--api-file fileName.js` to disambiguate. If you already have a raw path from DevTools, use `call-api --path ...`.
+If duplicate service keys exist, pass `--api-file fileName.js`. If you already have a raw path from DevTools, use `call-api --path ...`.
 
-For multipart frontend APIs, use `--multipart` plus `--json-part NAME=@payload.json`, `--part NAME=value`, or `--file-part NAME=/path/to/file`. If the backend expects a single JSON text part, set `--payload-part-name` to the frontend field name.
+For a multipart frontend API, use `--multipart` plus `--json-part NAME=@payload.json`, `--part NAME=value`, or `--file-part NAME=/path/to/file`. If the backend expects a single JSON text part, set `--payload-part-name` to the frontend field name.
 
-Frontend `$services` defaults to POST with JSON data. If a call overrides method or response type, mirror it:
+Frontend `$services` defaults to POST with JSON data. If a call overrides the method or the response type, match it.
 
 ```bash
 python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" call-service \
@@ -74,55 +74,55 @@ python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" call-service \
   --response raw --output /tmp/datajob-config.xlsx
 ```
 
-Use `--method GET` for services called with `method: 'get'`, `--response text` for plain text, `--response raw --output FILE` for blob/download APIs, and `--header X-Product-Code=...` when a SaaS/product-cluster page relies on frontend-injected product headers.
+Use `--method GET` for a service called with `method: 'get'`. Use `--response text` for plain text. Use `--response raw --output FILE` for a blob or download. Use `--header X-Product-Code=...` when a SaaS or product-cluster page relies on a product header the frontend injects.
 
-## Datasource Groups
+## Datasource groups
 
-Do not hardcode based only on product names. The automation mirrors the current `dataSourceGroup.json` groups for common decisions:
+Do not hardcode a decision from the product name alone. The automation mirrors the current `dataSourceGroup.json` groups.
 
 - MQ: Kafka, AutoMQ, AmazonMSK, RocketMQ, RabbitMQ, Pulsar.
 - Redis: Redis, ElastiCache.
 - ES: ElasticSearch.
-- hasSchema: Oracle/PostgreSQL/Hana/SQLServer/Db2/Tunnel/Hudi/file-like and related PG-compatible families.
+- hasSchema: Oracle, PostgreSQL, Hana, SQL Server, Db2, Tunnel, Hudi, file-like sources, and related PostgreSQL-compatible families.
 - noDb: Kudu, MQ, Redis, ElasticSearch, RagApi, DynamoDB.
 
-`RagApi` uses `TABLE_TOPIC` for target mapping and belongs to the `noDb`, `noStruct`, and `noColumn` groups. For LLM providers such as OpenAI, DashScope, and Bedrock, read the datasource settings from the frontend request or dynamic KV definitions.
+`RagApi` uses `TABLE_TOPIC` for target mapping. It belongs to `noDb`, `noStruct`, and `noColumn`. For an LLM provider such as OpenAI, DashScope, or Bedrock, read the datasource settings from the frontend request or from the dynamic KV definitions.
 
-For Hive, Hudi, Iceberg, Paimon, DeltaLake, Kudu, MaxCompute, and DataLakeFormation, use the catalog, table, partition, and sink options exposed by the frontend for the selected engine.
+For Hive, Hudi, Iceberg, Paimon, DeltaLake, Kudu, MaxCompute, and DataLakeFormation, use the catalog, table, partition, and sink options the frontend exposes for the selected engine.
 
-When frontend groups change, update the Python constants before claiming parity.
+When frontend groups change, update the Python constants before you claim parity.
 
-## Datasource Config Parity
+## Datasource config parity
 
-Datasource create/update APIs and datajob create APIs do not have identical payload lifetimes. Datasource management saves the reusable datasource object; datajob creation copies selected connection fields and dynamic config into the task. Always check both surfaces when a datasource-specific setting is involved.
+Datasource create and update APIs, and data job create APIs, do not share one payload lifetime. Datasource management saves the reusable datasource object. Data job creation copies selected connection fields and dynamic config into the task. Check both surfaces when a datasource-specific setting is involved.
 
-Examples that must be traced or queried dynamically:
+Trace these dynamically. Or query these dynamically.
 
-- TiDB source needs the SQL host and PD host copied into the job. A datasource host fix alone will not fix existing TiDB-source jobs.
-- StarRocks/Doris/SelectDB need HTTP/FE/BE address fields copied when the frontend includes them.
-- Kafka and other MQ sources may use special `ANY_DB`/topic mapping plus source-specific WebOp fields.
-- Secret fields may be masked on query, so a repair flow needs explicit user-provided credentials or a captured frontend payload.
+- A TiDB source needs the SQL host and the PD host copied into the job. Fixing the datasource host alone does not fix an existing TiDB-source job.
+- StarRocks, Doris, and SelectDB need HTTP, FE, and BE address fields copied when the frontend includes them.
+- Kafka and other MQ sources may use `ANY_DB` or topic mapping plus source-specific WebOp fields.
+- Secret fields may be masked on query. A repair flow needs credentials the user provides, or a captured frontend payload.
 
-For a failed async create, use `list-job-configs --config-name NAME` for each affected field. Identify the job entry by `endPointType` and `configType`, then compare its saved value with the datasource detail. If the saved values differ, repair the job copy and retry the console task. If test data was initialized on the old endpoint, recreate or reinitialize the dataset.
+For a failed async create, use `list-job-configs --config-name NAME` for each affected field. Identify the job entry by `endPointType` and `configType`. Compare its saved value with the datasource detail. If the saved values differ, repair the job copy. If the saved values differ, retry the console task. If test data was initialized on the old endpoint, recreate the dataset. If test data was initialized on the old endpoint, reinitialize the dataset instead.
 
-## Create-Job Shape Checks
+## Create-job shape checks
 
-Dry-run and inspect these fields:
+Dry-run these fields. Inspect these fields.
 
-- Normal DB target usually has `targetSchema: null`.
-- MQ source to normal DB target has target DB schema and `ANY_DB`.
-- MQ source to hasSchema target has target DB/schema and `ANY_SCHEMA`.
-- Redis target uses target schema entries like `{ "prefix": "...", "suffixFields": [] }`.
-- ES target uses `{ "indexName": "...", "fields": [], "idFieldNames": [] }`.
+- A normal DB target usually has `targetSchema: null`.
+- An MQ source to a normal DB target has a target DB schema and `ANY_DB`.
+- An MQ source to a hasSchema target has a target DB and schema, and `ANY_SCHEMA`.
+- A Redis target uses target schema entries like `{ "prefix": "...", "suffixFields": [] }`.
+- An ES target uses `{ "indexName": "...", "fields": [], "idFieldNames": [] }`.
 - `COLUMN_COLUMN` is present for DB-source branches even when no explicit column mappings are set.
 
-## When To Trace The Browser
+## When to trace the browser
 
-Use the frontend directly or browser automation when the request involves:
+Use the frontend directly, or browser automation, when the request involves any of these.
 
-- Complex edit subscription reduce/remap flows.
-- Table-level partition expressions, Hive partition settings, Greptime time indexes, StarRocks/Doris/SelectDB partition details.
-- LLM/RagApi processors, virtual columns, implicit columns, or custom package processors.
-- A datasource type or source-target pair not already dry-run compared.
+- A complex edit-subscription reduce or remap.
+- Table-level partition expressions, Hive partition settings, Greptime time indexes, or StarRocks, Doris, and SelectDB partition details.
+- LLM or RagApi processors, virtual columns, implicit columns, or a custom package processor.
+- A datasource type or source-target pair that has not been dry-run compared yet.
 
-Capture the frontend request payload, then either pass it through `--*-json @file` or update the automation.
+Capture the frontend request payload. Pass it through `--*-json @file`. Or update the automation.

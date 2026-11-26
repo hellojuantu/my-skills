@@ -1,6 +1,6 @@
 # pstack 原版子技能索引
 
-同级技能目录中的 `pstack/` 保留 Lauren Tan 的 pstack 0.15.43。入口是 [README](../../pstack/README.md)、[poteto-mode](../../pstack/skills/poteto-mode/SKILL.md) 和 [指南](../../pstack/docs/guide/README.md)。此列表按随包的路径生成。
+同级 `pstack/` 保留 Lauren Tan 的 pstack 0.15.43。入口是 [README](../../pstack/README.md)、[poteto-mode](../../pstack/skills/poteto-mode/SKILL.md) 和 [指南](../../pstack/docs/guide/README.md)。下面的列表按包里的路径生成。
 
 先按任务选择原版入口。打包了 Cursor 和 Claude 的原始适配资料，框架专属能力按当前环境选择。涉及安装、部署、并行 agent 或提交合并时，遵循当前任务的授权。
 
