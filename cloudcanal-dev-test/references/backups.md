@@ -1,89 +1,29 @@
-# 仅用户明确要求时备份
+# Back up only when the user asks
 
-用户没有明确要求时，不要创建备份。
+Create a backup only when the user explicitly asks. Do the work that is already authorized, and do not ask again just to back up.
 
-已经授权的操作直接做。
+Move an existing backup and check it. Do not copy it, pack it again, or add another copy, and do not remove an old backup that another session left.
 
-不要为了备份再问一次。
+When the user asks for a backup, put the files on the machine you are backing up, under `/tmp/codex-backup/<task>/<host-or-slot>/`. Leave release artifacts, test inputs, evidence, and decision records in their original directories.
 
-已有备份只移动和核对。
+Create and check the backup with [backup.py](../scripts/backup.py). The script pins the backup root to the path above, sets the directory mode to 0700, and sets the archive and the restore manifest to mode 0600. Run the script on the machine you are backing up. The script uses only the standard library. You can copy it to Mini and run it there.
 
-不要复制。
-
-不要再打一份归档。
-
-不要追加副本。
-
-不要清理其他会话留下的旧备份。
-
-用户要求备份时，文件放在被备份那台机器的 `/tmp/codex-backup/<task>/<host-or-slot>/`。
-
-发布产物、测试输入、证据和决策记录仍放在原来的目录。
-
-用 [backup.py](../scripts/backup.py) 创建和校验。
-
-它把备份根目录固定在上面的路径。
-
-目录权限是 0700。
-
-归档和恢复清单的权限是 0600。
-
-脚本要在被备份的那台机器上跑。
-
-它只用标准库，可以拷到 Mini 上用。
-
-用户要求备份现用文件或目录时：
+When the user asks you to back up a live file or directory:
 
 ```sh
-python3 cloudcanal-dev-test/scripts/backup.py archive --task "$RELEASE_ID" --scope slot-03 --source '<现用 JAR 或配置目录>'
+python3 cloudcanal-dev-test/scripts/backup.py archive --task "$RELEASE_ID" --scope slot-03 --source '<current JAR or config directory>'
 ```
 
-多个来源重复传 `--source`。
-
-归档完成后，脚本读回整个归档并核对 SHA-256。
-
-它返回归档和 JSON 恢复清单的位置。
-
-清单记录每个 archiveMember 对应的 restoreTarget。
-
-还原时先校验清单，再按这些对应关系恢复。
+Pass `--source` again for each extra source. After the archive is written, the script reads the whole archive back, checks the SHA-256, and returns the path of the archive and the path of the JSON restore manifest. The manifest records the restoreTarget for each archiveMember. To restore, check the manifest first, then restore by those pairs.
 
 ```sh
-python3 cloudcanal-dev-test/scripts/backup.py verify '<返回的 JSON 恢复清单>'
+python3 cloudcanal-dev-test/scripts/backup.py verify '<returned JSON restore manifest>'
 ```
 
-用户要求备份数据库时，先用 `backup.py directory --task "$RELEASE_ID" --scope '<主机名>'` 取得私有目录。
+When the user asks you to back up a database, get the private directory with `backup.py directory --task "$RELEASE_ID" --scope '<hostname>'`, write the export as mode 0600, and put it in that directory. After the export succeeds, archive it with `archive --source '<export file>' --restore-target 'MySQL database motherdata'` and the same `--task` and `--scope`. After the archive check passes, delete the duplicate raw export that this round created.
 
-把导出写成 0600，放进该目录。
+When the user asks for a backup and Docker or a VM must stage the old files inside itself first, move the complete archive into `/tmp/codex-backup/<task>/<host-or-slot>/` and record the original volume or the restore target. When a complete archive already exists, move it and check it, and do not add another copy. After you check the restore manifest, the archive, and the rollback path, delete the extra internal copy that this round created.
 
-导出命令成功后，用 `archive --source '<导出文件>' --restore-target 'MySQL database motherdata'` 归档。
+A file staged for the swap, such as `.new`, is part of the replacement. A `rollback` file, a `.pre-*` file, or a `.bak` file kept for rollback is a backup. Do not leave that backup in HOME, the project directory, the release record directory, or a container.
 
-归档时传同一组 `--task` 和 `--scope`。
-
-归档验证通过后，删掉本轮自己创建的那份重复原始导出。
-
-用户要求备份，并且 Docker 或 VM 必须先在内部暂存旧文件时，把完整归档收进上述目录。
-
-记下原卷或恢复目标。
-
-已经有完整归档时，直接移动并核对。
-
-不要再套一份归档。
-
-核对恢复清单、归档和回退路径后，删掉本轮自己创建的冗余内部副本。
-
-`.new` 这类正在替换的暂存文件属于替换过程。
-
-用来回退的 `rollback`、`.pre-*`、`.bak` 属于备份。
-
-这些备份不能长期留在 HOME、项目目录、发布记录目录或容器里。
-
-用户要求外部发布脚本创建备份时，先用 `backup.py check-path '<备份目标>'` 检查目标。
-
-脚本会拒绝旧的 `private/releases/<id>/rollback` 路径。
-
-它不拦截任意操作系统复制命令。
-
-外部脚本必须传入已经核对过的备份位置。
-
-用户没有要求备份时，关掉或跳过外部脚本的自动备份。
+When the user asks an external release script to create a backup, check the target first with `backup.py check-path '<backup target>'`. `check-path` rejects the old `private/releases/<id>/rollback` path. `check-path` does not block an arbitrary operating-system copy command, so the external script must receive a backup path you already checked. When the user did not ask for a backup, turn off or skip that script's automatic backup.

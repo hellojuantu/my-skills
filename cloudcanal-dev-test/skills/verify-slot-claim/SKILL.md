@@ -3,118 +3,56 @@ name: verify-slot-claim
 description: "Check that a CloudCanal slot release with an older claimId cannot clear the claim that is there now. Use when editing slot_claim.py, change_claim, acquire_claim, slot_lock, or the slot claim model."
 ---
 
-# 槽位预留的 claimId
+# Slot reservation claimId
 
-一次释放只归档请求里写出的那次预留。调用者拿着旧的 `claimId` 再释放时，当前占用必须还在。否则后一轮的预留会被前一轮清掉，接下来的替换和重启会打到别人的槽位上。
+A release archives only the reservation written in the request. When a caller releases again with an old `claimId`, the current occupancy must still be there. Otherwise an earlier round clears the later reservation. The replace and restart that follow land on someone else's slot.
 
-模型在 `model/SlotClaim.tla`。
+The model is `model/SlotClaim.tla`. `owner` is the `claimId` in `owner.json`. `0` means the reservation directory does not exist. `memory[p]` is an id the caller still holds and can submit again.
 
-`owner` 是 `owner.json` 里的 `claimId`。
+`live` is not code. It records the reservation that has been released only by that same id. The property is `OwnerIsLive`. It is `owner = live`.
 
-`0` 表示预留目录不存在。
+`change_claim` reads and then writes inside `slot_lock`, so acquire and release are each one step in the model. That step matches `change_claim`, `acquire_claim`, and `slot_lock` in this skill's `scripts/slot_claim.py`.
 
-`memory[p]` 是调用者还留着、可以再次提交的 id。
+## When to rerun
 
-`live` 不是代码。
+Rerun after a change to `change_claim`, `acquire_claim`, or `slot_lock` in `slot_claim.py`, or to the way `status` takes its locks. Skip the run when the change is only documentation, status-query output fields, or parameters that do not touch the reservation directory.
 
-它记录「只被同一个 id 释放过」的那次预留。
+## How to run
 
-性质是 `OwnerIsLive`，也就是 `owner = live`。
-
-`change_claim` 在 `slot_lock` 里读完再写，所以模型里的申请和释放各是一步。
-
-这一步对应同一技能里 `scripts/slot_claim.py` 的 `change_claim`、`acquire_claim` 和 `slot_lock`。
-
-## 什么时候要重跑
-
-改了 `slot_claim.py` 里的 `change_claim`、`acquire_claim`、`slot_lock`，或 `status` 的加锁方式，就重跑。
-
-只改文档、状态查询的输出字段，或和预留目录无关的参数时，不用跑。
-
-## 怎么跑
-
-在 `my-skills` 仓库根目录：
+From the `my-skills` repository root, run this.
 
 ```sh
 python3 cloudcanal-dev-test/skills/verify-slot-claim/scripts/code_matches_model.py
 ```
 
-脚本在临时目录里跑。
+The script runs in a temporary directory. It uses two writers to check that the exclusive lock is mutually exclusive. It uses two slots to check that `status` holds both shared locks the whole time it reads each record.
 
-它用两个写者检查独占锁是否互斥，再用两个槽位检查 `status` 读每条记录时是否一直拿着两把共享锁。
+On acquire, update, and release, the script checks the lock it holds while reading the reservation, creating the directory, replacing `owner.json`, and archiving the directory. From the read through the write, it must hold the slot exclusive lock from that same acquisition. A repeated acquire, and a release with a different `claimId`, must leave the original reservation. The exit code is 1 when any check fails. `access` records whether this run is a verification task or a JAR replacement.
 
-申请、更新和释放时，脚本在读取预留、创建目录、替换 `owner.json` 和归档目录时分别核对所持的锁。
+Then use `/statechart` to read the result for `cloudcanal-dev-test/skills/verify-slot-claim/model/SlotClaim.tla`. The passing config is the neighboring `SlotClaim.cfg`, where `CheckIds = TRUE`. The chart wording is in `view.mjs` in the same directory. Use the `/statechart` command and paths from that skill's instructions at the time. Do not copy them here.
 
-从读到写必须持有同一次取得的槽位独占锁。
+`Broken.cfg` sets `CheckIds` to `FALSE`. That removes the `claimId` comparison before release. This config must fail. The failing path runs as follows. Caller A acquires and releases. Caller B acquires. A releases again with the old id it kept. That release clears the current occupancy. The current code must stay on the config that passes.
 
-重复申请，以及用不同 `claimId` 释放，都必须留下原预留。
+## How to read a failure
 
-任一检查失败时退出码是 1。
+First distinguish whether the code is broken or the model has drifted from the code. When `code_matches_model.py` fails, the lock is not mutually exclusive, an existing reservation was replaced by another acquire, or another `claimId` released the current reservation. The code and the model disagree. Run `Broken.cfg` with `/statechart` to see the shortest path where an old id clears the current occupancy. Do not change the property until you confirm the current code should behave this way. Do not change the model to match it before that confirmation.
 
-`access` 记录这次是验证任务还是替换 JAR。
+When the source check passes but `SlotClaim.cfg` fails, the model or the property does not match the steps inside the code's lock. Compare the reads and writes inside the same lock in `change_claim`. Fix the extra or missing step in the model, then rerun. Do not relax `OwnerIsLive` in order to pass.
 
-然后用 `/statechart` 读 `cloudcanal-dev-test/skills/verify-slot-claim/model/SlotClaim.tla` 的结果。
+When only `Broken.cfg` fails, the check can still catch this mistake.
 
-通过配置是旁边的 `SlotClaim.cfg`，其中 `CheckIds = TRUE`。
+## Scope
 
-图表用词在同目录的 `view.mjs`。
+Two callers, one slot, and at most 3 claim ids. The lock turns acquire, update, and release on the same slot into one complete step. An update keeps the same `claimId` and does not change the id.
 
-`/statechart` 的命令和路径以那份技能当时的说明为准，这里不抄。
+`status` takes every shared lock this query uses, in slot-number order, and then reads each record. `allRegisteredClaimed` and the occupancy of each registered slot then come from the same snapshot.
 
-`Broken.cfg` 把 `CheckIds` 设为 `FALSE`，也就是删掉释放前的 `claimId` 比较。
+Multi-slot queries are checked by the Python checker. The TLA model covers only concurrent operations on a single slot.
 
-这组配置必须失败。
+A process interrupted after it creates the directory, an old text reservation, the user's release authorization, an archive name collision, slot registration, and Mini remote forwarding are outside the model.
 
-失败路径是：调用者 A 申请并释放，调用者 B 申请，A 再用自己留下的旧 id 释放，当前占用被清掉。
+## In sync with the code
 
-当前代码要留在通过的那一组。
+The `slot_claim.py` Git blob compared on Mini this time is `0427f5f86a486d92054f2765c38f0274b853325a`. `code_matches_model.py` passed. TLC checked 25 distinct states of `SlotClaim.cfg`, and every state satisfies `OwnerIsLive`. State 5 of `Broken.cfg` reproduced an old id clearing a new reservation.
 
-## 失败时怎么看
-
-先分清是代码坏了，还是模型跟代码脱节。
-
-`code_matches_model.py` 失败时，锁没有互斥，已有预留被再次申请换掉，或另一个 `claimId` 释放了当前预留。
-
-这是代码和模型不一致。
-
-用 `/statechart` 跑 `Broken.cfg`，可以看到旧 id 清掉当前占用的最短路径。
-
-在确认现有代码就该如此之前，不要改性质，也不要改模型去迎合它。
-
-源码检查通过，但 `SlotClaim.cfg` 失败时，模型或性质和代码的锁内步骤对不上。
-
-对照 `change_claim` 里同一次加锁中的读写，修正模型里多出来或少掉的那一步，再重跑。
-
-不要为了通过去放宽 `OwnerIsLive`。
-
-只有 `Broken.cfg` 失败时，检查本身还能抓住这个错误。
-
-## 范围
-
-两个调用者，一个槽位，最多 3 个 claim id。锁把同一个槽位上的申请、更新和释放串成完整的一步。更新只保留同一个 `claimId`，不改 id。
-
-`status` 按槽号顺序取得这次查询涉及的所有共享锁，再读取各条记录。
-
-这样 `allRegisteredClaimed` 和每个已登记槽位的占用来自同一次快照。
-
-多槽位查询由 Python 对照器检查。
-
-TLA 模型只覆盖单槽位上的并发操作。
-
-创建目录后进程中断、旧文本预留、用户的释放授权、归档重名、槽位登记和 Mini 远程转发，都不在模型里。
-
-## 与代码同步
-
-这次在 Mini 上对照的 `slot_claim.py` Git blob 是 `0427f5f86a486d92054f2765c38f0274b853325a`。
-
-`code_matches_model.py` 通过。
-
-TLC 检查 `SlotClaim.cfg` 的 25 个不同状态，全部满足 `OwnerIsLive`。
-
-`Broken.cfg` 的第 5 个状态复现了旧 ID 清除新预留。
-
-只有重新读过当前 `change_claim`，确认模型仍描述同一次加锁里的申请和释放，并且 `SlotClaim.cfg` 通过、`Broken.cfg` 失败之后，才更新这里记录的源码版本。
-
-代码在这次确认之后又改过，就先重跑，再决定模型要不要跟着改。
-
-之后若还有没经过这次检查的改动，用 `/maintain-formal-verification-skill` 把模型和代码对齐。
+Update the source version recorded here only after you reread the current `change_claim`, confirm that the model still describes acquire and release inside the same lock, and see `SlotClaim.cfg` pass and `Broken.cfg` fail. If the code changes after that confirmation, rerun first. Then decide whether the model should follow. If a later change has not been through this check, use `/maintain-formal-verification-skill` to align the model with the code.

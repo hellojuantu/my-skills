@@ -1,27 +1,23 @@
-# Mini CHECK 报告
+# Mini CHECK report
 
-第一行写检查时间和范围。接着用一句话说明通过几项、失败几项、哪一项需要处理。
+Write the check time and the scope on the first line. In the next sentence, say how many items passed, how many failed, and which ones need action.
 
-## 连接
+## Connection results
 
-| 数据源 | Lab | 8111 | 8112 | 备注 |
+| Datasource | Lab | 8111 | 8112 | Notes |
 | --- | --- | --- | --- | --- |
-| 每个 MotherData 或 Lab 手工实例各一行 | 通过／失败／未测 | Successful／失败／未测 | Successful／失败／未测 | 只写变化、错误或未测原因 |
+| One row for each MotherData instance or Lab manual instance | passed, failed, or not tested | Successful, failed, or not tested | Successful, failed, or not tested | Only a change, an error, or why it was not tested |
 
-按本轮纳入的 Console 端口列出槽位。
+List the slots for the Console ports in this round. Fill a slot result when this round has Console Worker connection evidence. Otherwise write "not tested this round".
 
-有本轮 Console Worker 连接证据时填槽位结果，否则填「本轮未测」。
+Note the time of an older result in Notes. Put detailed ids, times, and redacted evidence in a link.
 
-已有的历史结果可以在备注里注明时间。
+## Disk and orphan datasources
 
-详细 ID、时间和脱敏证据放在链接里。
+- For macOS and for Colima, write free space, percent used, and the change since last time.
+- List only Docker resources that changed, and orphan datasources that need action. Say what was left behind, why it belongs to a temporary environment, and how much space it can free. Put exact container ids, volumes, images, and references in the evidence.
 
-## 磁盘与孤立数据源
+## Actions waiting for confirmation
 
-- macOS 和 Colima 各写剩余空间、占用率、较上次的变化。
-- 只列有变化的 Docker 资源，以及需要处理的孤立数据源。说明留下了什么、为什么属于临时环境、能释放多少空间。准确的容器 ID、卷、镜像和引用放在证据里。
-
-## 待确认
-
-- **A** 写要操作的对象、影响和回退办法。状态写待确认、已确认，或操作后的复测结果。
-- 没有待操作时写「无」。动手前按编号等用户确认，再复查现场。
+- **A.** Name the object, the effect, and how to roll it back. Set the state to waiting for confirmation, confirmed, or the retest result after the action.
+- When nothing is waiting, write "none". Before you act, wait for the user to confirm by item number. Then check the live state again.

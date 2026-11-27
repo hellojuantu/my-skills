@@ -24,7 +24,7 @@ class SshAuthReporter:
             "A Google account chooser is an agent action. Request user takeover only when the page requires "
             "password, MFA, CAPTCHA, or another action the agent cannot complete.\n"
             "Use CUA for the browser steps; keep browser automation out of shell scripts.\n"
-            "Workflow: cloudcanal-dev-test/skills/cc-setup/SKILL.md#mini-ssh-身份复核",
+            "Workflow: cloudcanal-dev-test/skills/cc-setup/SKILL.md#mini-ssh-identity-check",
             file=sys.stderr, flush=True,
         )
 

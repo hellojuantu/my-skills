@@ -1,16 +1,16 @@
-# pstack 原版子技能索引
+# Index of the original pstack sub-skills
 
-同级 `pstack/` 保留 Lauren Tan 的 pstack 0.15.43。入口是 [README](../../pstack/README.md)、[poteto-mode](../../pstack/skills/poteto-mode/SKILL.md) 和 [指南](../../pstack/docs/guide/README.md)。下面的列表按包里的路径生成。
+The sibling `pstack/` directory keeps Lauren Tan's pstack 0.15.43. The entry points are the [README](../../pstack/README.md), [poteto-mode](../../pstack/skills/poteto-mode/SKILL.md), and the [guide](../../pstack/docs/guide/README.md). The list below is generated from the paths in pstack.
 
-先按任务选择原版入口。打包了 Cursor 和 Claude 的原始适配资料，框架专属能力按当前环境选择。涉及安装、部署、并行 agent 或提交合并时，遵循当前任务的授权。
+Pick the original entry for the task. pstack includes the original adapter material for Cursor and for Claude. Where a capability belongs to one framework, choose it for the environment you are in. When you install, deploy, run agents in parallel, commit, or merge, follow the permission this task already has.
 
-## 工作流
+## Workflows
 
-- [原版 playbooks](../../pstack/skills/poteto-mode/playbooks/)
-- [原版 agents](../../pstack/agents/)
+- [Original playbooks](../../pstack/skills/poteto-mode/playbooks/)
+- [Original agents](../../pstack/agents/)
 - [Claude Code harness](../../pstack/docs/harness/claude-code.md)
 
-## 子技能
+## Sub-skills
 
 - [automations/benny/skills/reproduce-and-fix-issues](../../pstack/automations/benny/skills/reproduce-and-fix-issues/SKILL.md)
 - [automations/benny/skills/setup-benny](../../pstack/automations/benny/skills/setup-benny/SKILL.md)

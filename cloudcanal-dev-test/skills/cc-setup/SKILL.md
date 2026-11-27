@@ -1,28 +1,32 @@
 ---
 name: cc-setup
-description: Fork 之后填写自己的 Mini，安装 Tailscale，把技能链到 Codex，并按本机 TOML 配置 Codex 子代理。用于第一次安装、换机器，或 ssh 连不上 Mini 的时候。
+description: After a fork, fill in your own Mini, install Tailscale, link the skills into Codex, and configure Codex subagents from this machine's TOML. Use for a first install, a new machine, or when ssh cannot reach Mini.
 ---
 
-# CloudCanal 开发环境
+# CloudCanal development environment
 
-先 fork 这个仓库。不要提交 `mini.env`，也不要拷贝别人的那份文件。一份文件只描述一台测试机。
+Fork this repository first. Do not commit `mini.env`. Do not copy someone else's file. One file describes one test machine.
 
-## 填写 mini.env
+## Fill in mini.env
 
-把本目录的 `mini.env.example` 复制成 `mini.env`。按这个顺序填。
+Copy `mini.env.example` in this directory to `mini.env`. Fill it in this order.
 
-1. 安装 Tailscale。
-   macOS 运行 `brew install --cask tailscale`，然后打开菜单栏里的 Tailscale。
-   Linux 运行 `curl -fsSL https://tailscale.com/install.sh | sh`。
-   `tailscale status` 已经显示本机在线时，跳过安装。
-2. 运行 `tailscale up`。
-   把打印出的登录链接交给用户，由用户在浏览器里加入自己的 tailnet。
-   不要向用户要 Tailscale 密码，也不要在对话里填写。
-   链接过期就再跑一次。
-3. 从 `tailscale status` 把测试机的 MagicDNS 名字写入 `MINI_TAILSCALE_NAME`。
-   把它的登录账号写入 `MINI_SSH_USER`。
-   把你要用的 SSH 别名写入 `MINI_SSH_HOST`，常用 `mini`。
-4. 用这三个值写 `~/.ssh/config`。不要把 Tailscale IP 写进去。
+1. Install Tailscale.
+   On macOS, run `brew install --cask tailscale`, then open Tailscale from the menu bar.
+   On Linux, run `curl -fsSL https://tailscale.com/install.sh | sh`.
+   Skip the install when `tailscale status` already shows this machine online.
+2. Run `tailscale up`.
+   Hand the printed login link to the user.
+   Have the user join their own tailnet in a browser.
+   Do not ask the user for a Tailscale password.
+   Do not type one in the chat.
+   Run the command again if the link expires.
+3. From `tailscale status`, write the test machine's MagicDNS name into `MINI_TAILSCALE_NAME`.
+   Write its login account into `MINI_SSH_USER`.
+   Write the SSH alias you will use into `MINI_SSH_HOST`.
+   The usual alias is `mini`.
+4. Write `~/.ssh/config` from these three values.
+   Do not put a Tailscale IP in that file.
 
 ```sshconfig
 Host <MINI_SSH_HOST>
@@ -30,79 +34,47 @@ Host <MINI_SSH_HOST>
   User <MINI_SSH_USER>
 ```
 
-5. 运行 `ssh -o BatchMode=yes <MINI_SSH_HOST> 'hostname -s'`。
-   SSH 打出复核链接时，按 [Mini SSH 身份复核](#mini-ssh-身份复核) 继续。
-6. 把打印出的短主机名写入 `MINI_HOSTNAME`。
+5. Run `ssh -o BatchMode=yes <MINI_SSH_HOST> 'hostname -s'`.
+   When SSH prints an identity-check link, continue at [Mini SSH identity check](#mini-ssh-identity-check).
+6. Write the printed short hostname into `MINI_HOSTNAME`.
 
-`run_mini_test.py` 和 `slot_claim.py` 读这个文件。任一值为空，或远端短主机名和 `MINI_HOSTNAME` 不同，它们就拒绝执行。
+`run_mini_test.py` and `slot_claim.py` read this file. They refuse to run when any value is empty, or when the remote short hostname differs from `MINI_HOSTNAME`.
 
-Console 会话和 Lab 页面按 `MINI_HOSTNAME`、`MINI_TAILSCALE_NAME`、`MINI_SSH_HOST` 里的完整主机名识别 Mini。
+Console sessions and Lab pages recognize Mini by the full hostnames in `MINI_HOSTNAME`, `MINI_TAILSCALE_NAME`, and `MINI_SSH_HOST`. `run_mini_test.py` passes these three names to the test process on Mini.
 
-`run_mini_test.py` 会把这三个名字传给 Mini 上的测试进程。
+## Mini SSH identity check
 
-## Mini SSH 身份复核
+When `run_mini_test.py` or `slot_claim.py` recognizes an identity-check link, it prints the steps to follow in Chrome. Follow those steps and finish the check with a Google account that is already signed in. When you run another SSH command directly, pass this round's link to the same entry point with `python3 cloudcanal-dev-test/scripts/ssh_auth.py '<Tailscale identity-check link returned by SSH>'`.
 
-`run_mini_test.py` 和 `slot_claim.py` 认出复核链接后，会打印 Chrome 里的操作步骤。
+## Link the skills
 
-按那些步骤，用已登录的 Google 账号完成复核。
+From the repository root, run `sh cloudcanal-dev-test/skills/cc-setup/scripts/link-skills.sh`. The script links `pstack`, `cloudcanal-dev-test`, `datasource-lab`, `cloudcanal-console-automation`, and `juantu-mode` into `~/.codex/skills/`.
 
-直接运行其他 SSH 命令时，把本轮链接传给同一个入口：`python3 cloudcanal-dev-test/scripts/ssh_auth.py '<SSH 返回的 Tailscale 复核链接>'`。
+Skip a link that already points at the matching skill directory in this checkout. Rewrite a legacy `.codex/skills/<skill>` link in the same checkout only when the install directory has no other checkout of the same name. When that same-named checkout is already in the install directory, stop and leave the link. When a link points somewhere else, stop and print the path to check.
 
-## 链接技能
+Cursor uses the same `juantu-mode`. Link this machine's user skill directory to `my-skills/juantu-mode`. Do not make another copy.
 
-在仓库根目录运行 `sh cloudcanal-dev-test/skills/cc-setup/scripts/link-skills.sh`。
+Start a new chat and confirm that all five skills are present. What the workspace requires is in [Workspace rules](../../references/coding-workflow.md#workspace-rules).
 
-脚本把 `pstack`、`cloudcanal-dev-test`、`datasource-lab`、`cloudcanal-console-automation` 和 `juantu-mode` 链到 `~/.codex/skills/`。
+## Codex agents
 
-已经指向这次检出里对应技能目录的软链会跳过。
+Cursor's `/setup-pstack` writes `~/.cursor/rules/pstack-models.mdc`. Codex does not read that file when it dispatches a subagent. It reads the TOML in `~/.codex/agents/`. The `codex-agents/` directory here is a usable copy. When this machine does not have those files yet, copy its five TOML files into `~/.codex/agents/`.
 
-指向同一检出里 `.codex/skills/<技能>` 的软链，只有在安装目录里没有另一个同名检出时，才会改到技能目录。
-
-安装目录里已经有那个同名检出时，脚本停下来，并留下原来的链接。
-
-指向别处的链接会停下来，并打印要核对的路径。
-
-Cursor 使用同一份 `juantu-mode`。本机用户技能目录链到 `my-skills/juantu-mode`，不要再抄一份。
-
-新开一个对话，确认这五个技能都在。工作区里要遵守的事写在 [工作区规则](../../references/coding-workflow.md#工作区规则)。
-
-## Codex 代理
-
-Cursor 的 `/setup-pstack` 写 `~/.cursor/rules/pstack-models.mdc`。
-
-Codex 派子代理时不读那个文件，读 `~/.codex/agents/` 里的 TOML。
-
-本目录 `codex-agents/` 是一份可用副本。
-
-本机还没有这些文件时，把其中五个 TOML 复制到 `~/.codex/agents/`。
-
-| pstack 角色 | Codex 代理 | 模型 | 档位 |
+| pstack role | Codex agent | Model | Effort |
 | --- | --- | --- | --- |
-| `feature, refactoring`、`bug-fix`、`perf-issue`、`hillclimb` | `pstack_builder` | `gpt-6.2-astra` | `high` |
+| `feature, refactoring`, `bug-fix`, `perf-issue`, `hillclimb` | `pstack_builder` | `gpt-6.2-astra` | `high` |
 | `judgment and prose` | `pstack_judgment` | `gpt-6.2-sol` | `high` |
 | `swarm workers` | `pstack_worker` | `gpt-6.2-sol` | `medium` |
-| `arena runners` | `pstack_builder`、`pstack_worker`、`pstack_judgment` | 见各代理 | 见各代理 |
-| `arena cross-judge pool` | 没有第二家模型时，由主 agent 汇总候选证据，并写明评审范围。 |  |  |
-| `interrogate reviewers` | `pstack_code_review`、`pstack_worker`、`pstack_regression_review` | `gpt-6.2-astra`、`gpt-6.2-sol`、`gpt-6.1-terra` | 均为 `medium` |
+| `arena runners` | `pstack_builder`, `pstack_worker`, `pstack_judgment` | see each agent | see each agent |
+| `arena cross-judge pool` | When there is no model from a second vendor, the main agent gathers the candidate evidence and states the review scope. |  |  |
+| `interrogate reviewers` | `pstack_code_review`, `pstack_worker`, `pstack_regression_review` | `gpt-6.2-astra`, `gpt-6.2-sol`, `gpt-6.1-terra` | all `medium` |
 
-Codex 能按名称委派时，用上表的代理名。
+When Codex can delegate by name, use the agent names in the table. When you can fill in only a model and an effort, read `model` and `model_reasoning_effort` from the matching TOML. The first line points at `worker.md`, as Poteto requires. When the full session history is needed, inherit the main session's model and effort.
 
-只能填模型和档位时，从对应 TOML 读出 `model` 和 `model_reasoning_effort`。
+One person runs release and restart on the same Mini slot, one after another. See [mini-release](../../references/mini-release.md). Different slots can run in parallel.
 
-第一行按 Poteto 的要求指向 `worker.md`。
+Commit the skill text, templates, and scripts. Leave caches, preview images, generated PDFs, and temporary directories on this machine.
 
-需要完整会话历史时，继承主会话的模型和档位。
+Unit tests, JDBC, and test processes run on the machine named in `mini.env`. The entry point is [run_mini_test.py](../../scripts/run_mini_test.py). Air and Pro only develop and build.
 
-同一个 Mini 槽位上的发布和重启由一个人串行做，见 [mini-release](../../references/mini-release.md)。不同槽位可以并行。
-
-提交技能正文、模板和脚本。缓存、预览图、生成的 PDF 和临时目录留在本机。
-
-单测、JDBC 和测试进程在 `mini.env` 写明的那台机器上跑，入口是 [run_mini_test.py](../../scripts/run_mini_test.py)。
-
-Air 和 Pro 只做开发和构建。
-
-数据库和每周一上午 9 点的巡检在 [datasource-lab](../../../datasource-lab/SKILL.md)。
-
-槽位和 Console 端口在 [mini-release](../../references/mini-release.md)。
-
-Console 会话在 [cloudcanal-console-automation](../../../cloudcanal-console-automation/SKILL.md)。
+Databases and the Monday 9 a.m. inspection are in [datasource-lab](../../../datasource-lab/SKILL.md). Slots and Console ports are in [mini-release](../../references/mini-release.md). Console sessions are in [cloudcanal-console-automation](../../../cloudcanal-console-automation/SKILL.md).

@@ -1,15 +1,15 @@
-# 给代理的规则
+# Rules for agents
 
-| 规则 | 执行检查 |
+| Rule | Check |
 | --- | --- |
-| 只在有改动的仓库切换任务分支。 | 没有自动检查。交付时看各仓库当前分支。 |
-| 读 Console 返回值时，一个值只用接口里的那一个字段。不要再写 `fsmId` / `fsmID` 这种别名。 | `python3 cloudcanal-console-automation/scripts/check_console_field_aliases.py` |
-| 启动任务不查槽位预留。 | `python3 cloudcanal-console-automation/scripts/check_no_invented_gates.py` |
-| Mini 控制台主机名从 `mini.env` 读取。不要在脚本里写死 `http://mini:`。 | `python3 cloudcanal-console-automation/scripts/check_mini_host.py` |
-| 查询预留走共享锁。`change_claim` 必须拿独占锁。对照器要看到这次调用，不能只检查锁函数本身。 | `python3 cloudcanal-dev-test/skills/verify-slot-claim/scripts/code_matches_model.py` |
-| Mini 发布在停服务前校验本轮 `claimId`，用 `write` 预留进入 `deploying`。已授权的发布直接执行。 | `python3 cloudcanal-dev-test/scripts/test_slot_claim_access.py` 检查 `read` 预留无法进入发布阶段。 |
-| Mini 测完保留原写预留，更新为 `awaiting-handoff`。全占用时列出会话供用户打开和决定。用户明确要求后才释放指定预留。 | `slot_claim.py release` 要求 `--user-confirmed` 并核对当前 `claimId`。在 Mini 运行 `python3 cloudcanal-dev-test/tests/test_slot_claim.py` 验证交接、全占用和旧 ID。 |
-| 本轮新建并启动的 Mini 增量验收任务在目标读回后停止。用户要求继续运行时记录状态。 | `check_console_jobs.py stopped-test-job` 核对停止后的同一任务回执。 |
-| SSH 复核在 Chrome 里点已登录的 Google 账号。页面要求密码、MFA 或验证码时，才交给用户。 | `python3 -m unittest cloudcanal-dev-test.tests.test_ssh_auth` |
-| 用户没有明确要求时，不要创建备份。 | `python3 -m unittest cloudcanal-dev-test.tests.test_backup` 只检查路径和权限。 |
-| 测试默认走 Console API。用户要求看页面时，才打开浏览器。 | `check_console_jobs.py api-job` 接受没有截图的证据。 |
+| Switch a task branch only in a repo you change. | There is no automatic check. At delivery, look at the current branch of each repo. |
+| When you read a Console return value, use only the one field that value has in the API. Do not write an alias such as `fsmId` or `fsmID`. | `python3 cloudcanal-console-automation/scripts/check_console_field_aliases.py` |
+| Do not check slot claims when you start a job. | `python3 cloudcanal-console-automation/scripts/check_no_invented_gates.py` |
+| Read the Mini console host name from `mini.env`. Do not hard-code `http://mini:` in a script. | `python3 cloudcanal-console-automation/scripts/check_mini_host.py` |
+| A claim query takes the shared lock. `change_claim` must take the exclusive lock. The comparison must see these calls, and must not check only the lock function. | `python3 cloudcanal-dev-test/skills/verify-slot-claim/scripts/code_matches_model.py` |
+| A Mini release checks this round's `claimId` before it stops services. The release enters `deploying` on a `write` claim. Run an already authorized release directly. | `python3 cloudcanal-dev-test/scripts/test_slot_claim_access.py` checks that a `read` claim cannot enter the release phase. |
+| After tests on Mini, keep the original write claim and set it to `awaiting-handoff`. When every slot is taken, list the sessions so the user can open them and decide. Release only the claim the user names, and only after the user explicitly asks. | `slot_claim.py release` requires `--user-confirmed` and checks the current `claimId`. On Mini, run `python3 cloudcanal-dev-test/tests/test_slot_claim.py` to verify handoff, every slot taken, and an old ID. |
+| After you read the target back, stop the Mini incremental acceptance job this round created and started. When the user asks to keep it running, record the state. | `check_console_jobs.py stopped-test-job` checks the same job's receipt after the stop. |
+| For an SSH identity check, click the signed-in Google account in Chrome. Hand the page to the user only when it asks for a password, MFA, or a verification code. | `python3 -m unittest cloudcanal-dev-test.tests.test_ssh_auth` |
+| Do not create a backup unless the user explicitly asks. | `python3 -m unittest cloudcanal-dev-test.tests.test_backup` checks only paths and permissions. |
+| Tests use the Console API by default. Open a browser only when the user asks to see the page. | `check_console_jobs.py api-job` accepts evidence with no screenshot. |

@@ -1,146 +1,76 @@
 ---
 name: cloudcanal-dev-test
-description: 在 Air 或 Pro 开发和构建 CloudCanal，在 Mini 运行测试并使用真实 Console 验收。现有版本可直接建任务，需要部署时使用独立槽位。也用于 CloudCanal 编码规范、反向合并 dev 和人工提测。
+description: Develop and build CloudCanal on Air or Pro, run tests on Mini, and accept them on the real Console. Create a job on the existing version directly, and use a separate slot when you need to deploy. Also use this for CloudCanal coding rules, reverse-merging dev, and the manual QA note.
 ---
 
-# CloudCanal 开发与实库验收
+# Develop CloudCanal and accept it on Mini
 
-Air 和 Pro 用来写代码、构建。单测、前端测试、组件测试、JDBC 程序和测试服务都在 Mini 上跑。
+Write and build on Air or Pro. Run unit tests, frontend tests, component tests, JDBC programs, and test services on Mini.
 
-默认用 [Console API 自动化](../cloudcanal-console-automation/SKILL.md) 创建、配置、运行和验收测试。
+Create, configure, run, and accept a test with [Console API automation](../cloudcanal-console-automation/SKILL.md). Open a browser only when the user asks to see the page.
 
-用户要求看页面时，才打开浏览器。
+Prefer a test database that is already registered on Mini. Do not create a backup unless the user asks. When the user asks for a backup, follow [Backups](references/backups.md). When no registered instance fits, install one and register it with [Manual install on Mini](../datasource-lab/SKILL.md#manual-install-on-mini).
 
-新的测试库优先用 Mini 上已经登记的实例。
+When you only create or view a job on the existing version, call the matching Mini Console API directly. Only when you load this round's code, replace a JAR, or restart a service, follow [Slot release](references/mini-release.md).
 
-用户没有明确要求时，不要创建备份。
-
-用户要求备份时，按 [备份](references/backups.md) 做。
-
-没有合适实例时，按 [手工部署到 Mini](../datasource-lab/SKILL.md#手工部署到-mini) 安装并登记。
-
-只用现有版本建任务或查看任务时，直接调用对应 Mini Console 的 API。
-
-要加载这轮改过的代码、换 JAR 或重启服务时，才走 [发布槽位](references/mini-release.md)。
-
-测试前把这轮源码、补丁或产物放到 Mini 的单独目录。从开发机运行：
+Before the test, put this round's source, patch, or artifacts in a separate directory on Mini. Run this from the development machine:
 
 ```sh
-python3 scripts/run_mini_test.py --workdir '<Mini 目录>' -- <命令> <参数>
+python3 scripts/run_mini_test.py --workdir '<Mini directory>' -- <command> <arguments>
 ```
 
-工作目录和命令都在 Mini 上执行。回执里有执行主机和退出码。组件测试也可以经这个入口在 Mini 上跑 `docker exec`。
+The work directory and the command both run on Mini. The receipt names the host and the exit code. A component test can also run `docker exec` on Mini through this entry.
 
-## 一轮改动怎么做
+## Work through one change
 
-1. 先写清范围。
-   只在有改动的仓库创建或切换任务分支。
-   没改的仓库留在原来的分支。
-   构建依赖时，用指定 SHA 的独立检出。
-   不要把没改的仓库切到同名分支。
-   记下正常入口、最小复现和能观察到的结果。
-   记下涉及的仓库、源端、目标端和任务类型。
-   记下每个仓库的分支、完整 HEAD，以及这轮补丁包含哪些文件。
-   工作区里还有别人的改动时，从记下的 HEAD 另做一个检出。
-   用 `git diff --binary HEAD` 取出这轮要带上的改动。
-   用 `git ls-files --others --exclude-standard` 找出要另拷的新文件。
-2. 再改代码。
-   编码、提交和提测按 [编码约定](references/coding-workflow.md)。
-   要用 Poteto 流程时，先读 [Codex 代理](skills/cc-setup/SKILL.md#codex-代理)。
-   小改动先复现，再改出错的那一步。
-   改共享逻辑时看调用方。
-   原版流程目录在 [索引](references/pstack-index.md)。
-   用户指定和 Claude 一起做时，读 [交接](references/claude-collaboration.md)。
-3. 然后构建和测试。
-   开发机只做构建，例如 Gradle `assemble`，或 Maven `-Dmaven.test.skip=true package`。
-   单测和引擎组件测试用上面的 Mini 入口。
-   涉及 JDBC 时，用真实驱动做一次读写。
-   需要发布时，按 [槽位发布](references/mini-release.md) 独占一个空槽位。
-   槽位都被占时，列出持有者，等用户看过会话再决定。
-   槽位上缺测试库时，按 [数据源实验室](../datasource-lab/SKILL.md) 补。
-4. 最后通过 Mini Console API 自动化验收。
-   数据源或驱动有改动时，做 [槽位连接验收](../datasource-lab/SKILL.md#cloudcanal-槽位连接验收)。
-   把每条 Worker 连接写进 [Mini CHECK 报告](../datasource-lab/references/check-report.md)。
-   数据任务按 [API 取证](references/api-job.md) 保存请求来源、任务 ID 和状态，再从目标端把数据读回来。
-   准备配置和查询用 [Console 自动化](../cloudcanal-console-automation/SKILL.md)。
-   使用同槽位的 Automation 登录会话；API 确实返回需要人工完成的身份复核时，报告原始提示。
-   SSH 要求 Tailscale 复核时，按 [Mini SSH 身份复核](skills/cc-setup/SKILL.md#mini-ssh-身份复核) 打开链接。
-   API 操作失败时，记录接口、任务 ID、原始错误和未完成步骤。用户要求页面操作时，按 [页面取证](references/browser-job.md) 保存页面证据。
-5. 收尾。
-   按 [新建增量验收任务收尾](references/browser-job.md#新建增量验收任务收尾) 停掉这轮为了验收新建的增量任务。
-   交付里写 Mini Console 入口、任务 ID、API 结果和目标读回。
-   发布过时，附上各仓库 SHA、槽位，以及已加载 JAR 的校验。
+Run the change in this order.
 
-## 验收规则与检查
+1. Write the scope first. Create or switch a task branch only in a repository that this change touches. Leave an unchanged repository on its current branch. When you build a dependency, use a separate checkout at the specified SHA. Do not move an unchanged repository onto a branch of the same name.
 
-测试进程都在 Mini 上。`scripts/run_mini_test.py` 先经 SSH 确认主机，再执行命令，并读回退出码。
+   Record the normal entry, the smallest reproduction, and a result you can observe. In that same note, include the repositories, the source, the target, and the job type. For each repository, include the branch, the full HEAD, and the files in this patch. When the workspace still has someone else's changes, make another checkout from the recorded HEAD. Take this round's changes with `git diff --binary HEAD`. Find new files to copy with `git ls-files --others --exclude-standard`.
+2. Change the code next. Follow [coding workflow](references/coding-workflow.md) for the code, the commit, and the QA note. Before a Poteto flow, read [Codex agents](skills/cc-setup/SKILL.md#codex-agents). For a small change, reproduce it, then edit the step that fails. When you change shared logic, read the callers.
 
-现有版本上建任务时，直接用 Mini Console。记下实际 URL 和任务 ID。
+   The original flows are listed in the [pstack index](references/pstack-index.md). When the user asks you to work with Claude, read the [Claude handoff](references/claude-collaboration.md).
+3. Build and test next. On the development machine, only build. For example, use Gradle `assemble`, or Maven `-Dmaven.test.skip=true package`. Run unit tests and engine component tests through the Mini entry above. When the change touches JDBC, read and write once with the real driver.
 
-部署新版本时独占槽位。
+   When you need to deploy, take one empty slot alone. Follow [Slot release](references/mini-release.md). When every slot is taken, list the holders. Wait until the user has read the sessions and decided. When the slot has no test database, add one from [Datasource lab](../datasource-lab/SKILL.md).
+4. Accept through the Mini Console API. When the change includes a datasource or a driver, run the [CloudCanal slot connection check](../datasource-lab/SKILL.md#cloudcanal-slot-connection-check). Write each Worker connection into the [Mini CHECK report](../datasource-lab/references/check-report.md).
 
-用 `scripts/slot_claim.py status` 看槽位和持有者。
+   For a data job, save the request source, the job ID, and the status with [API evidence](references/api-job.md). Then read the data back from the target. Prepare the config and the queries with [Console automation](../cloudcanal-console-automation/SKILL.md).
 
-申请后记下 `claimId`。
+   Use the Automation login session for that same slot. When the API response itself asks for an identity check that a person must finish, report the original prompt. When SSH asks for a Tailscale check, open the link as [Mini SSH identity check](skills/cc-setup/SKILL.md#mini-ssh-identity-check) describes.
 
-测完后用 `awaiting-handoff` 留着这次写预留。
+   When an API call fails, record the API, the job ID, the raw error, and the step that did not finish. When the user asks for a page action, save the page evidence as [Page evidence](references/browser-job.md) describes.
+5. Close the round. Stop the incremental job this round created for acceptance. Follow [Stop a new incremental acceptance job](references/browser-job.md#stop-a-new-incremental-acceptance-job). In the delivery, write the Mini Console entry, the job ID, the API result, and the target read-back. When you deployed, attach each repository SHA, the slot, and the checksum of each loaded JAR.
 
-用户明确要求再释放。
+## Acceptance rules and checks
 
-槽位都被占时，把占用会话列给用户选。
+Test processes run on Mini. `scripts/run_mini_test.py` confirms the host over SSH, runs the command, and reads the exit code.
 
-启动任务不查预留。
+On the existing version, create or view a job directly in the Mini Console. Record the real URL and the job ID. When you deploy a new version, take a slot alone.
 
-改了 `slot_claim.py` 的加锁或释放时，按 [verify-slot-claim](skills/verify-slot-claim/SKILL.md) 重跑。
+See the slots and the holders with `scripts/slot_claim.py status`. After you claim a slot, record the `claimId`. When the test is done, keep that write claim and set it to `awaiting-handoff`. Release the claim only when the user explicitly asks.
 
-Mini Automation 用自己的 `login --save-cookie` 拿到这个槽位的会话。
+When every slot is taken, list the occupied sessions for the user to choose. When you start a job, do not look up claims. When you change the lock or the release path in `slot_claim.py`, rerun [verify-slot-claim](skills/verify-slot-claim/SKILL.md).
 
-用户明确要求页面操作时，用这个槽位已经登录的浏览器。
+Mini Automation gets this slot's session with its own `login --save-cookie`. When the user explicitly asks for a page action, use the browser that is already logged in on this slot. When login or an identity check must be handed over, keep the prompt from the page.
 
-登录或身份复核要交接时，把页面提示留下来。
+Compare full and incremental results on the same input, row by row. When you compare versions, keep the same evidence for each version. For a timestamp read-back, follow [Compare full and incremental rows](references/browser-job.md#compare-full-and-incremental-rows). `phase-readback` checks the values in one run and checks that the two phases agree in another.
 
-要比较全量和增量时，用同一份输入逐笔对。
+A Console end-to-end result includes this round's job ID. For a component test, name the read stage and the write stage it actually reached.
 
-要比较版本时，每个版本留同样的证据。
+By default, `api-job` checks API creation, the job, and the start status. Use `browser-job` for screenshots and the page source only when the user asks for the page. `fresh-check` checks the finish time of this round's CHECK subtask.
 
-时间戳读回见 [全量和增量逐笔核对](references/browser-job.md#全量和增量逐笔核对)，用 `phase-readback` 分别看值对不对、两阶段是否一致。
+When you close incremental acceptance, stop the job this round created and started. When the user asks to keep it running, record the status. `stopped-test-job` checks the receipt for that same job after the stop. Confirm that `fsmActive=false` and that the incremental subtask is `STOP`.
 
-Console 的端到端结果要带这轮任务 ID。
+## Check a data path
 
-组件实测要写明实际跑到的读写阶段。
+Query the real source, the real target, and the Worker cluster through the Console API. Select them from that result. Check the connection, the subscribed objects, and the key parameters. After you save, read the config and the mapping back through the API. After you start, query that same job and its subtask status.
 
-默认用 `api-job` 核对 API 创建、任务和启动状态；用户要求页面时才用 `browser-job` 核对截图与页面来源。
+When the case says to create the target objects automatically, check the options the API saved. Then use the target engine's own entry to confirm that the objects exist.
 
-`fresh-check` 核对这轮 CHECK 子任务的完成时间。
+Check the full phase against the sample you prepared. For the incremental phase, confirm from the engine status or the log that this job's reader is ready. Write one change that carries a unique marker. Read that change back through the target's own entry.
 
-增量验收收尾时，停掉这轮新建并启动的任务。
+Compare full and incremental results with the same business values. When you check a restart, a resume, or a config comparison, record the version and the data separately for each round.
 
-用户要求继续跑时，记下状态。
-
-`stopped-test-job` 核对停止后的同一份回执，确认 `fsmActive=false`，增量子任务是 `STOP`。
-
-## 数据链路怎么验
-
-通过 Console API 查询并选择真实的源、目标和 Worker 集群。
-
-看连接、订阅对象和关键参数。
-
-保存后用 API 读回配置与映射；启动后查询同一个任务及其子任务状态。
-
-用例要求自动建目标对象时，核对 API 保存的选项，再用目标引擎自己的入口确认对象已经建出来。
-
-全量核对事先放好的样本。
-
-增量先用引擎的状态或日志确认这个作业的读端就绪，再写入一条带唯一标记的变更，然后用目标自己的入口读回来。
-
-比较全量和增量时用同一组业务值。
-
-验证重启、续跑或配置对照时，每一轮分开写版本和数据。
-
-链路支持校验而且用例要求时，建一轮独立的 CHECK，或从已结束的任务重跑。
-
-保存 API 结果和这轮任务快照。
-
-用 `scripts/check_console_jobs.py fresh-check` 核对完成时间、任务 ID 和是不是这轮新跑的。
-
-判断时同时看目标读回，以及 CHECK 的行数、差异数和漏行数。
+When the path supports CHECK and the case requires it, create a separate CHECK, or rerun CHECK from a finished job. Save the API result and this round's job snapshot. Use `scripts/check_console_jobs.py fresh-check` to check the finish time, the job ID, and that the run belongs to this round. Judge the result from the target read-back together with the CHECK row count, the difference count, and the missing-row count.

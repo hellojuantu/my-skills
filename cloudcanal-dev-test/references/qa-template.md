@@ -1,34 +1,34 @@
-# [版本]分支[开发人]
+# [version] branch [developer]
 
-## 背景
+## Background
 
-- 开发人：〈姓名〉
-- 环境：
-  - cloudcanal-product 分支：〈实际分支〉
-  - cloudcanal 分支：〈实际分支〉
-  - clougence-schema 分支：〈实际分支〉
-  - clougence-rdp 分支：〈实际分支〉
-  - clouddm-web 分支：〈实际分支〉
-  - clougence-drivers、clougence-parser：〈实际分支〉
-- 约定发布时间：
-  - 待定
-- 特性面向用户：
-  - 全部
+- Developer: 〈name〉
+- Environment:
+  - cloudcanal-product branch: 〈actual branch〉
+  - cloudcanal branch: 〈actual branch〉
+  - clougence-schema branch: 〈actual branch〉
+  - clougence-rdp branch: 〈actual branch〉
+  - clouddm-web branch: 〈actual branch〉
+  - clougence-drivers, clougence-parser: 〈actual branch〉
+- Agreed release time:
+  - Pending
+- Who the feature is for:
+  - All users
 
-## 需求
+## Requirement
 
-- 支持 〈本次提供的能力〉。
+- Support 〈capability this change provides〉.
 
-## 修复
+## Fix
 
-- 修复〈用户能够观察到的问题〉。
+- Fix 〈problem a user can observe〉.
 
-## 开发自测
+## Developer self-test
 
-〈本轮自测结论和待测项〉
+〈conclusion of this round's self-test, and items still to test〉
 
-### 1. 〈用例标题〉
+### 1. 〈case title〉
 
-- 〈已验证阶段和实际结果〉
-- 〈任务配置、Mini Console 入口及作业 ID，按用例填写〉
-- 〈待测场景和验收条件〉
+- 〈stage that was checked, and the actual result〉
+- 〈job config, Mini Console entry, and job ID, filled in for this case〉
+- 〈scenario still to test, and the acceptance condition〉

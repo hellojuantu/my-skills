@@ -1,30 +1,34 @@
 ---
 name: lab-weekly-check
-description: 按 Datasource Lab 做每周只读巡检并写出 Mini CHECK 报告。用于定时巡检，不用于发布 MotherData 或手工装库。
+description: Run the Datasource Lab weekly read-only check and write the Mini CHECK report. Use it for the scheduled check, not to publish MotherData or install a database by hand.
 ---
 
-# Datasource Lab 每周巡检提示词
+# Datasource Lab weekly check
 
-每次运行先读 [Datasource Lab](../../SKILL.md) 和工作区 `AGENTS.md`。按技能里的每周巡检和磁盘检查做。
+On every run, read [Datasource Lab](../../SKILL.md) and the workspace `AGENTS.md` first. Follow the weekly check and the disk check in that skill.
 
-1. 从 MotherData 全量清单和 Lab 的 Mini 手工实例台账开始。
-   核对私有连接和各 CloudCanal 槽位。
-   按各 scope 归档完整候选快照。
-   做认证只读探测。
-   核对上次和这次的差异。
-   引用已有的槽位 Worker 页面证据，并注明测试时间。
-   缺少本轮页面证据的条目，标记本轮未测。
-   只读巡检跳过已登记数据源的 **Test Connection**。
-   那个操作可能更新关系库的版本元数据。
-2. 同一轮运行 Mini 的 `disk-status.py --weekly`。
-   核对 macOS 和 Colima 数据盘、Docker 容器、卷和镜像，以及槽位库占用。
-   检查已结束的临时环境是否留下孤立数据源和容器。
-   核对任务、登记、容器状态和挂载引用。
-   列出精确的清理候选和预计释放量。
-   在 Mini 私有发布目录核对旧 JAR、元数据库快照和临时发布卷。
-   用槽位当前发布记录、预留和回退记录确认哪些仍在使用。
-   把已经没有引用的备份，按路径、发布时间和可释放空间列入清理候选。
-3. 按 [Mini CHECK 报告模板](../../references/check-report.md) 出一份报告。
-   列出数据源、Worker、磁盘、孤立资源、失败与恢复，以及每项待确认操作。
-   报告列出检查时间、范围、阻塞，以及原始脱敏证据的位置。
-4. 定时任务只做读检查和证据归档。发布可用清单、修改配置、部署、重启和清理，逐项写进报告，等用户确认。执行已确认的范围之前，重新核对现场。执行后补上验证结果。
+1. Start from the full MotherData list and the Lab ledger of manual instances on Mini.
+   Check private connections and each CloudCanal slot.
+   Archive a full candidate snapshot for each scope.
+   Run authenticated read-only probes.
+   Compare this round with the previous one.
+   Cite existing slot Worker page evidence, and note when it was tested.
+   Mark an entry with no page evidence this round as not tested this round.
+   Skip **Test Connection** on a registered datasource during this read-only check.
+   That action can update version metadata on a relational database.
+2. In the same round, run `disk-status.py --weekly` on Mini.
+   Check the macOS and Colima data disks, Docker containers, volumes, images, and slot database space.
+   See whether a finished temporary environment left an orphan datasource or container.
+   Check jobs, registrations, container state, and mount references.
+   List the exact cleanup candidates and the space you expect to free.
+   In Mini's private release directory, check old JARs, metadata database snapshots, and temporary release volumes.
+   Use the slot's current publish record, its reservation, and its rollback record to see which of those are still in use.
+   For a backup with no remaining reference, add its path, publish time, and freeable space to the cleanup candidates.
+3. Write one report from the [Mini CHECK report](../../references/check-report.md) template.
+   List datasources, Workers, disk, orphan resources, failures and recoveries, and each action waiting for confirmation.
+   Include the check time, the scope, the blockers, and where the raw redacted evidence is.
+4. The scheduled job only reads and archives evidence.
+   Write each publish of the usable list, config change, deploy, restart, and cleanup into the report as its own item.
+   Wait for the user to confirm each item.
+   Before you run a confirmed scope, check the live state again.
+   After you run it, add the verification result.

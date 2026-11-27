@@ -13,7 +13,7 @@ for skill in pstack cloudcanal-dev-test datasource-lab cloudcanal-console-automa
   expected=$(CDPATH= cd -- "$source_dir" && pwd -P)
   if [ -e "$dest" ] || [ -L "$dest" ]; then
     if [ ! -L "$dest" ]; then
-      printf '已有目录，先核对：%s\n' "$dest" >&2
+      printf 'existing directory, check it first: %s\n' "$dest" >&2
       exit 1
     fi
     action=$(python3 - "$dest" "$repo_phys" "$skill" "$expected" <<'PY'
@@ -48,7 +48,7 @@ PY
       ln -sfn "$source_dir" "$dest"
       continue
     fi
-    printf '软链指向别处，先核对：%s\n' "$dest" >&2
+    printf 'symlink points somewhere else, check it first: %s\n' "$dest" >&2
     exit 1
   fi
   ln -s "$source_dir" "$dest"

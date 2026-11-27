@@ -1,64 +1,27 @@
-# Codex 与 Claude 协作
+# Collaborate between Codex and Claude
 
-这套方法也可以用在别的代码库。CloudCanal 的 Mini 部署和数据源配置从技能入口查。发给 Claude 的内容只包括完成评审或修复需要的技术背景。
+This method works in other codebases too. For CloudCanal, look up Mini deployment and datasource configuration from the skill entry. Send Claude only the technical background that the review or the fix needs.
 
-## 从复现到交付
+## From reproduction to delivery
 
-1. Codex 先复现。
-   记下版本、实际入口、预期结果和实际结果。
-   尽量找到最小反例。
-   分开看是存储、显示、校验还是配置的问题。
-   涉及源端或目标端时，分别追全量、CDC、校验，以及实际启用的 typed 和非 typed 路径。
-2. 把明确的工作交给 Claude。
-   默认给用户一段可转发的英文。
-   先写症状和能重复的证据，再写希望它核实的代码路径、验收条件、要保留的现有行为，以及先不做的事。
-   用户要求先分析时，写明在查清受影响入口之前不要改代码。
-3. 写明这一轮谁改代码。
-   Claude 改时，Codex 做独立 review，读用户指定的会话，准备测试和环境。
-   用户让 Codex 修时，再接手代码。
-   同一个文件交给一方改，这样补丁和测试结果对得上。
-4. 逐项核实 Claude 的回复。
-   把初步推断、源码确认、仓库改动和测试通过分开记。
-   回到调用点，确认组件测试盖住了实际入口。
-   沿着共享的 reader、writer、序列化和默认配置看相邻路径。
-   确认回归用例在旧行为下会失败，并且同时覆盖应该相等和应该不等的输入。
-   读对话和看补丁都是 review。
-   转不转发仍由用户决定。
-5. 按用户指定的完成条件往下做。
-   要交付的修复都准备好了，才同步并开始正式集成复测。
-   Claude 暂停、额度用完，或路径还没确认时，向用户说明已经证实的结果和卡住的那一步，同时继续能独立做的验证。
-   恢复后先看补丁状态，避免把做过的验证再做一遍。
-6. Codex 收尾。
-   针对实际补丁重跑回归。
-   需要实库时，先确认目标端读回，再看校验结果，比较修复前后。
-   回报补丁和测试状态、用例或任务 ID、剩下的差异、确切的阻塞。
-   只有用户授权，才改原代码、提交或推送。
+Do these in order.
 
-## 直接连接用户的 Claude 会话
+1. Codex reproduces the problem first. Record the version, the real entry, the expected result, and the actual result. Find the smallest counterexample you can. Say whether the failure is storage, display, validation, or configuration. When a source or a target is involved, trace the full phase, the CDC phase, and CHECK separately. Also trace the typed path and the non-typed path that are actually enabled.
+2. Hand the clear work to Claude. By default, give the user English they can forward. First write the symptom and the evidence you can repeat. Then name the code path Claude should check and the acceptance condition. Also name the existing behavior to keep, and the work to leave undone for now. When the user wants analysis first, say not to edit code until the affected entries are clear.
+3. State who edits the code this round. When Claude edits, Codex reviews on its own and reads the session the user names. Codex also prepares the tests and the environment. Take over the code only when the user tells Codex to fix it. Give any one file to only one side. The patch and the test result then refer to the same edit.
+4. Check Claude's reply item by item. Record a first inference, a source confirmation, a repository change, and a passing test as separate notes. Return to the call site and confirm that a component test covers the real entry. Follow shared readers, writers, serialization, and default configuration into the neighboring paths. Confirm that the regression case fails under the old behavior. Confirm that the case covers input that should match and input that should not match. Reading the conversation and reading the patch are both review. The user still decides whether to forward it.
+5. Continue under the completion condition the user set. Only after every fix you will deliver is ready, sync and start the formal integration retest. Claude may pause, run out of quota, or leave the path unconfirmed. Tell the user what is already proved, and name the step that is stuck. Continue the verification you can do alone. After work resumes, read the patch state first. Do not repeat a verification you already ran.
+6. Codex closes the work. Rerun the regression against the actual patch. When you need a real database, confirm the target read-back before you read the CHECK result. Compare the state before the fix with the state after the fix. Report the patch status and the test status. Include the case or job ID, the remaining difference, and the exact blocker. Change the code, commit, or push only when the user authorizes it.
 
-用户已经授权直接协作，并且有可用的终端会话时，先核对目标是他指定的那个 Claude 会话。
+## Use the user's Claude session
 
-看当前任务、Claude 是否空闲、输入框是否空白。
+When the user has allowed direct collaboration and a terminal session is available, first confirm that the target is the Claude session the user named. Look at the current task, whether Claude is idle, and whether the input is empty. When Claude is busy, or a draft is already there, leave the session as you found it. Continue the work you can do alone.
 
-正忙或已有草稿时，留下现场，继续能独立做的工作。
+The connection depends on the user's environment. An existing tmux session is one example. Write the handoff, the follow-up, and the feedback in English, in the user's words. Send only what the check, the edit, and the test need. Keep deployment details, hosts, credentials, other sessions, and the text of this skill on the local machine.
 
-连接方式由用户的环境决定，例如已经存在的 tmux 会话。
+After you send, read back the latest message and the status. Confirm that it arrived and that the other side is continuing. When the status is unclear, read it back before you send again. A reply is only evidence for Codex to collect. The user still decides whether to accept an edit outside the scope, a commit, or a push.
 
-交接、追问和反馈都用英文，用用户的措辞。
-
-只发送核实、修改和测试需要的内容。
-
-部署细节、主机、凭据、其他会话和本技能的内容留在本地。
-
-发出后读回最近的消息和状态，确认送到了并且对方在继续。
-
-状态不明时先读回，避免重复发送。
-
-回复只给 Codex 收集证据。
-
-接受范围外的修改、提交和推送，仍由用户决定。
-
-## 给 Claude 的英文交接模板
+## English handoff template
 
 > Please verify the causal path for each reproduced issue, then make the smallest fix within the agreed scope. For each issue, here is the entry point, the observed result, and the expected result.
 >
@@ -66,4 +29,4 @@
 >
 > Trace the actual feature entry points and confirm the behavior of any shared paths affected by your change. Add a regression test for the failing case and include the test output. Call out any behavior changes, existing failures, or coverage that still needs integration testing. Keep [out-of-scope item] out of this patch. Let me know which fixes are ready for independent review and retesting.
 
-复杂改动可以分两次交接。先请 Claude 只确认路径和比较方案。等用户确认语义之后再改。例子用本轮的证据写。不要把某一条业务链路的临时要求写成其他仓库的通用规则。
+A complex change can take two handoffs. First ask Claude only to confirm the path and to compare approaches. After the user confirms the meaning, make the edit. Write the example from this round's evidence. Do not turn a temporary requirement from one business path into a general rule for other repositories.

@@ -1,203 +1,101 @@
-# pstack 与 Codex 和 Claude 的连接方式
+# Connect pstack to Codex and Claude
 
-pstack v0.15.43 由 Lauren Tan 编写。
+pstack v0.15.43 was written by Lauren Tan. The sibling `pstack/` directory keeps the original text, the scripts, and the [MIT license](../../pstack/LICENSE), with each file left as it is.
 
-原文、脚本和 [MIT 许可](../../pstack/LICENSE) 在同级 `pstack/` 里，逐文件保留。
+Pick a sub-skill from the [index](pstack-index.md) first. The flow follows [poteto-mode](../../pstack/skills/poteto-mode/SKILL.md). This page covers only how this install connects.
 
-先从 [索引](pstack-index.md) 选子技能。
+## Workspace rules
 
-流程以 [poteto-mode](../../pstack/skills/poteto-mode/SKILL.md) 为准。
+`cc-all-in-one`'s `AGENTS.md` points at the skills installed on this machine. It covers the agent roles, reverse-merging `dev`, the manual QA note, formatting before a commit, real Console acceptance, and the login handoff. How to carry them out is later on this page and in the [Mini flow](../SKILL.md).
 
-本页只写我们这边怎么接。
+Parallel agents use the `pstack-*.toml` files in `~/.codex/agents/`. When those files are missing, configure them as [Codex agents](../skills/cc-setup/SKILL.md#codex-agents) describes. After you change machines, confirm that the skill paths in `~/.codex/config.toml` still point at this install.
 
-## 工作区规则
+When an original flow asks you to understand an entry, find a root cause, or judge the impact, start from evidence. Collect a reproduction, a normal control, and the related code. For a protocol, a type conversion, or a cross-layer change, find the closest implementation in the repository. Check its input, its output, and its responsibility. When the call shape can stay, keep the existing entry and put the behavior difference in the layer that owns that meaning. CloudCanal tests run through the Mini test entry.
 
-`cc-all-in-one` 的 `AGENTS.md` 指向本机已安装的技能。
+When the user names who does the work or who reviews it, follow that split. Hand work to Claude with the [English handoff](claude-collaboration.md).
 
-里面写了代理分工、反向合并 `dev`、人工提测、提交前格式化、真实 Console 验收和登录交接。
+When you verify through a real entry, first write down the result you will look at. For CloudCanal, keep the unit tests and the component tests. Also follow the [Mini flow](../SKILL.md) for API acceptance and a native read-back on the target. Operate the page only when the user explicitly asks for the page. Other repositories use their own tools.
 
-做法在本页后面，以及 [Mini 主流程](../SKILL.md)。
+When you rerun a flow that is already mature, reuse its original checks and its delivery requirements. Take the environment rules and the datasource rules from the current repository.
 
-并行代理用 `~/.codex/agents/` 里的 `pstack-*.toml`。
+When you verify a protocol such as Binlog, compare `dev` and the current version on the same real protocol sample. Record the earliest step that fails. When you use a fixture, write the column definitions and the actual protocol encoding as separate notes. When the fixture and the real data disagree, the conclusion covers only the steps the fixture actually reached.
 
-没有这些文件时，按 [cc-setup](../skills/cc-setup/SKILL.md#codex-代理) 配置。
+When the shared terminal is busy, you can still read code, prepare data, and run tests in a separate session. Write the results as separate parts: a source check, a unit test, a build, and a real-database read-back. When you pick an original flow, load only the sub-skill this step needs.
 
-换机器时，确认 `~/.codex/config.toml` 里的技能路径仍指向这次安装。
+## Task branch scope
 
-原版流程要理解入口、找根因或看影响时，先收集复现、正常对照和相关代码。
+Create or switch a task branch only in a repository that has changes. For a fix in one repository, do not create a branch of the same name in the other repositories.
 
-协议、类型转换或跨层改动，先找仓库里最接近的实现，核对输入、输出和职责。
+Syncing `dev`, building a dependency, and switching the task branch are three separate actions. Leave an unchanged repository on its current branch. When you need another version as a dependency, pin that SHA with a separate checkout or a worktree.
 
-调用方式可以保持时，沿用现有入口，把行为差异放在负责该语义的那一层。
+## Reverse-merge dev
 
-CloudCanal 的测试经 Mini 测试入口跑。
+A reverse merge covers every separate Git project under `cc-all-in-one`. In each repository, fetch `origin/dev` and look at the current branch and the working tree. Merge `origin/dev` into the feature branch. Fast-forward the local `dev` so it matches `origin/dev`.
 
-用户指定谁来做或谁来评审时，按他的分工。交给 Claude 时，用 [英文交接](claude-collaboration.md)。
-
-要用真实入口验证时，先写明要看的结果。CloudCanal 在单测和组件测试之外，按 [Mini 主流程](../SKILL.md) 做 API 自动化验收和目标原生读回；只有用户明确要求页面时才做页面操作。其他仓库用自己的工具。
-
-要重跑一个已经成熟的流程时，复用原版的验证和交付要求。环境和数据源用当前仓库的约束。
-
-验证 Binlog 一类协议时，用同一份真实协议样本对照 `dev` 和当前版本。
-
-记下最早失败的环节。
-
-用夹具时，分开写列定义和实际协议编码。
-
-夹具和真实数据不一致时，结论只覆盖夹具真正走到的环节。
-
-共享终端正忙时，可以继续读代码、准备数据和单独跑测试。验证结果分开写：源码核对、单测、构建、实库读回。选原版流程时，只加载这一步需要的子技能。
-
-## 任务分支范围
-
-只有有改动的仓库才创建或切换任务分支。
-
-单仓修复时，不要在其他仓库创建同名分支。
-
-同步 dev、构建依赖和切换任务分支是三件分开的事。
-
-没改的仓库留在原来的分支。
-
-需要别的版本做依赖时，用独立检出或 worktree 固定到那个 SHA。
-
-## 反向合并 dev
-
-反向合并覆盖 `cc-all-in-one` 下每个独立 Git 项目。
-
-逐仓库取 `origin/dev`，看当前分支和工作区。
-
-功能分支合入 `origin/dev`。
-
-本地 `dev` 用快进同步。
-
-做完后运行：
+After that, run:
 
 ```sh
 python3 ~/.codex/skills/cloudcanal-dev-test/scripts/check_dev_merges.py
 ```
 
-脚本自己发现项目，直接查各自远端 `dev`，核对那些提交已在当前 `HEAD` 里。失败时按仓库报告缺的提交、冲突或其他阻塞。
+The script finds the projects on its own. It queries each remote `dev` directly and checks that those commits are in the current `HEAD`. On failure, it reports the missing commits, the conflict, or the other blocker for each repository.
 
-## 编码约定
+## Name a local before you pass it
 
-传给方法或构造器的值需要解析、转换或组合时，先用一个有业务含义的局部变量接住。
+When an argument to a method or a constructor needs parsing, conversion, or a combination, hold it in a local first. Give that local a name that says what it means. A new or edited Java local uses its real type. Write `ZoneId sourceTimestampZone = ObDsUtil.toLogProxyZoneId(config.getSrcTimeZone());` first, then pass `sourceTimestampZone`. When you review Java added in this round, look for a local that still uses `var`.
 
-Java 里新增或修改的局部变量写实际类型。
+## Update the manual QA document
 
-先写 `ZoneId sourceTimestampZone = ObDsUtil.toLogProxyZoneId(config.getSrcTimeZone());`，再把 `sourceTimestampZone` 传进去。
+When you create a QA note, copy the [CloudCanal internal QA template](qa-template.md). Fill the version, the branch, and the developer into the title. Under Developer self-test, add a `###` heading for each part of this round's scope. After you settle those headings, keep a baseline copy to compare against.
 
-评审本轮新增的 Java 时，看局部变量还有没有 `var`。
+When the user gives you a draft or a template, keep a backup copy first. Edit the file they gave you. Keep its headings, its sections, its order, and its list format. Add cases and acceptance conditions inside the sections that are already there. Compare lists, tables, and links with the original.
 
-## 更新人工提测文档
+Fill Background in the template order: developer, environment, agreed release time, and who the feature is for. Under Environment, write the real branch of each repository. Follow the template for repository order and for items that share one line. Check the original for the order and the list depth of developer, environment, agreed release time, and who the feature is for.
 
-新建时复制 [CloudCanal 内部提测模板](qa-template.md)。
+Put the Console entry and the job data in the matching Developer self-test case. In Requirement and in Fix, start a new capability line with the word Support. One such line is "Support a JDBC connection time zone on a TiDB source and a TiDB target."
 
-填上标题里的版本、分支和开发人。
+Write the conclusion first under Developer self-test. For the feature in this QA note, write the result, the job config, the job ID, and the items still to test. Write a parameter name and its value as ordinary text, for example useTypedField=true. Match each item to this round's Requirement or Fix. Do not put a parameter name or a parameter value in inline backticks.
 
-按本轮范围列出「开发自测」的三级标题。
+Leave a reverted change in the development record. Leave build, deploy, and rollback notes in that same record. Deliver Markdown that Yuque can import directly.
 
-标题定了之后留一份底稿，用来对照。
+## Format the Java files before you commit
 
-用户给了原稿或模板时，在那份稿上改。保留标题、章节、顺序和列表格式。在原有章节里补用例和验收条件。改之前留一份原稿。对照原稿看列表、表格和链接。
+Before the commit, list every Java file this change touches. Include added files, edited files, and files whose names changed. Format each whole file with IntelliJ IDEA **Reformat Code**. In `cc-all-in-one`, use the project's `canal-format`. When that same file also has another task's edits, separate the part you will commit. After formatting, look at the diff and the staged range. Then commit. When you group files in IDEA by database or by the purpose of the change, use `pika-idea-control` to confirm which files sit in which changelist.
 
-「背景」按模板顺序填开发人、环境、约定发布时间和特性面向用户。
-
-「环境」逐项写实际仓库分支。
-
-仓库顺序和合并项跟模板走。
-
-对照原稿看这四项的顺序和列表层级。
-
-Console 入口和任务数据放在对应的自测用例里。
-
-「需求」和「修复」里新增的功能支持条目以「支持」开头。例如「支持 TiDB 源端和目标端配置 JDBC 连接时区」。
-
-「开发自测」先写结论。
-
-围绕这次提测的功能写结果、任务配置、作业 ID 和待测项。
-
-参数名和参数值写成普通文本，例如 useTypedField=true。
-
-逐项看它是不是对应这次的「需求」或「修复」。
-
-参数名和参数值不用行内反引号。
-
-撤回的改动，以及构建、部署、回退，留在开发记录里。
-
-交付可以直接导入语雀的 Markdown。
-
-## 提交前格式化
-
-提交前列出这次涉及的全部 Java 文件，包括新增、修改和重命名后的文件。
-
-用 IntelliJ IDEA 的 **Reformat Code** 对整份文件格式化。
-
-`cc-all-in-one` 用项目里的 `canal-format`。
-
-同一文件里还有其他任务的改动时，先把这次要提交的内容隔开。
-
-格式化后再看差异和暂存范围，然后提交。
-
-要在 IDEA 里按数据库或改动目的归类时，用 `pika-idea-control` 确认 Changelist 的文件和归属。
-
-这次提交涉及的每个 Java 文件都检查整份。日志英文正文的首字母大写，包括原有日志和标签后面的正文。暂存后在仓库根目录运行：
+Check the whole of every Java file in this commit. Capitalize the first letter of English log text, including a log that is already there and the text after a tag. After you stage, run this from the repository root:
 
 ```sh
 python3 ~/.codex/skills/cloudcanal-dev-test/scripts/check_java_log_initials.py
 ```
 
-按报告的文件和行号改，再暂存，再跑。
+Fix the file and the line the report names. Stage that fix, then run the check again.
 
-用 `//` 拆开的 Java 调用，每个参数末尾都写 `//`，包括最后一个。`);` 单独占下一行。在仓库根目录运行：
+In a Java call that you split with `//`, end every argument with `//`, including the last argument. Put `);` on the next line by itself. The script checks only calls of this shape that are new in the current diff. Run this from the repository root:
 
 ```sh
 python3 ~/.codex/skills/cloudcanal-dev-test/scripts/check_java_call_wrap.py
 ```
 
-脚本只检查这次 diff 里新出现的这种调用。
-
-新增或改了签名的 Java 方法、构造器里，每个自定义参数都要有实际用途。暂存后在仓库根目录用 JDK 17 或更高版本运行：
+In a Java method or constructor that you add, or whose signature you change, every custom parameter needs a real use. After you stage, run this from the repository root on JDK 17 or newer:
 
 ```sh
 java ~/.codex/skills/cloudcanal-dev-test/scripts/CheckJavaParameters.java
 ```
 
-沿调用点追到最终读取该值的业务操作。整条链没有消费者时，从声明和调用方一起删掉这个参数。
+Follow each call to the business operation that finally reads the value. When the whole chain has no consumer, delete that parameter from the declaration and from the callers together.
 
-日志首字母和 Java 参数检查默认读暂存区。
+The log-capitalization check and the Java parameter check read the staging area by default. To review a commit that already exists, add `--commit <commit>`. For Java edited in this round, pass file paths to the log check. It then checks each whole file in the working tree.
 
-复核已有提交时加 `--commit <提交>`。
+The `//` call check reads the diff from `HEAD` to the working tree, and it reads untracked Java files. The parameter check accepts `--between <old-commit> <new-commit>`. To narrow the check, put repository-relative paths after `--`.
 
-本轮 Java 改动可以把文件路径直接传给日志检查，对工作区整份文件做检查。
+The parameter check uses the JDK syntax tree to compare named-type member declarations in the two versions. It reports a parameter that never appears as an identifier in the method body. A comment, a string, and `this.ddl` do not count as a use of the parameter `ddl`. A plain pass-through, an assignment, or a same-named reference in a nested scope can still satisfy the check. Trace those cases by hand.
 
-`//` 调用检查读 `HEAD` 到工作区的差异，以及未跟踪的 Java 文件。
+The check skips a declaration that has no method body. It also skips a method of a local class, a method of an anonymous class, a record constructor, and the standard `main(String[])`. To keep an inheritance contract, the check also skips `@Override` and a one-argument `equals`. It also skips an instance method that names a parent type and might override a parent method.
 
-参数检查支持 `--between <旧提交> <新提交>`。
+## Map original tools to Codex
 
-也可以在 `--` 后面附仓库相对路径，缩小范围。
+When the original names a Cursor `Task` or a model, dispatch it as [Codex agents](../skills/cc-setup/SKILL.md#codex-agents) says. Dispatch in parallel the work you can accept on its own, such as a code review, data preparation, and log analysis. After a seat is free, dispatch the task you already prepared.
 
-参数检查用 JDK 语法树比较两个版本里具名类型的成员声明。
+When you need an independent review and no separate reviewer is available, write in the acceptance record which checks actually ran. When the original waits on the current task with `/loop`, keep checking in this Codex session. Stop when a completion condition appears, or when you hit a concrete blocker.
 
-它报告方法体里从未作为标识符出现的参数。
-
-注释、字符串和 `this.ddl` 都不算使用了参数 `ddl`。
-
-单纯转发、赋值，或嵌套作用域里的同名引用，都可能通过，仍要人工追。
-
-检查跳过没有方法体的声明、局部类和匿名类的方法、record 构造器，以及标准 `main(String[])`。
-
-为了保留继承契约，也跳过 `@Override`、单参数 `equals`，以及显式声明了父类型、可能覆盖父方法的实例方法。
-
-## Codex 工具对应关系
-
-原版提到 Cursor `Task` 或某个模型时，按 [cc-setup](../skills/cc-setup/SKILL.md#codex-代理) 分派。
-
-代码复核、数据准备、日志分析这类可以单独验收的工作并行分派。
-
-席位空出来之后，再派已经准备好的任务。
-
-需要独立评审但没有独立执行者时，在验收记录里写明实际做了哪些检查。
-
-原版用 `/loop` 等待当前任务时，就在当前 Codex 会话里继续查，直到出现完成条件或具体的阻塞。
-
-原版里的外部会话、插件安装、自动化、推送、开 PR 和合并，按用户在这个任务里给的权限做。
+The original may mention an external session, a plugin install, or an automation. It may also mention a push, opening a PR, or a merge. Follow the permission the user gave for this task.

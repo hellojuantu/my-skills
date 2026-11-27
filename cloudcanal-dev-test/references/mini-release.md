@@ -1,176 +1,48 @@
-# 从 Air 或 Pro 发布到 Mini
+# Release from Air or Pro to Mini
 
-要加载代码变更或重启服务时，用发布槽位。只在现有版本上创建或验证任务时，直接用对应 Mini Console 的 API 自动化。记下任务 ID 和 API 结果；页面操作只在用户明确要求时执行。
+Use a release slot when you load a code change or restart a service. Create or verify a job on the existing version through that Mini Console's API. Record the job id and the API result. Open the page only when the user explicitly asks to use the page.
 
-发布前在 Mini 的 `~/datasource-lab` 读 `MINI-TEST-V1.md` 和 `cloudcanal-service/slots.json`。
+Before the release, on Mini, read `MINI-TEST-V1.md` and `cloudcanal-service/slots.json` under `~/datasource-lab`. Choose the real entry from `consolePort`, `network`, and `project` in the registration table. One slot runs one release at a time, and different slots can run in parallel. Prefer the entry the user named.
 
-按登记表里的 `consolePort`、`network`、`project` 选实际入口。
+When every registered slot is already claimed, list the occupying sessions in [Release and handoff](#release-and-handoff) and wait for the user to decide. If the user has already named a new slot, prepare that entry.
 
-同一槽位串行。
+Check the metadata database and Prometheus against the slot registration and the live Compose project. Some slots share those services, and other slots run their own.
 
-不同槽位可以并行。
+When you add a slot, check that the port, the subnet, and the volume name are free. Then take an exclusive claim. Prepare a separate Compose project, Console, the RDP schema, private config, volumes, the Worker, and the listen ports. Register the slot in `slots.json`.
 
-用户指定的入口优先。
+Record the branch, the agent, the slot, the Git SHA, and the release time on one release record. Read Mini's access hostname from `mini.env`.
 
-已登记槽位都被预留时，按 [释放与交接](#释放与交接) 列出占用会话，等用户看过再决定。
+## Prepare the artifacts
 
-用户已经指定新槽位时，按指定入口准备。
+Deploy the full artifact set from the same release manifest when a new slot installs this branch for the first time, or when you cannot confirm the version of the artifacts that are running. Reuse that slot's persistent volumes, schemas, and datasources.
 
-按槽位登记和实际 Compose 核对元数据库和 Prometheus。有的槽位用共享服务，有的用独立服务。
+Use an incremental release for a small change when a compatible baseline from the same branch is already there. Check the version and the hash of each running JAR, and decide what to replace from the change and its shared dependencies.
 
-新增槽位时，先检查端口、子网和卷名是否空闲。
+When the change includes Console, build with that slot's Maven profile. Mini 03 Console uses `-Poutput`. The Gradle plugin `dev` build is a separate entry.
 
-然后独占预留。
+1. Check out the selected commit in a separate build directory on Air or Pro. Build with that project's JDK 17 and Gradle entry. When only one plugin changed and its shared dependencies did not, build that plugin. When the change includes schema, publish the matching dependencies to this round's isolated Maven Local, then build CloudCanal. An install script that would overwrite this machine's runtime directory is allowed only in the isolated build directory and the isolated runtime directory.
+2. Generate a release manifest. Include each repository's full commit, the patch summary this release needs, and each JAR's component, relative path, old-file SHA-256, and new-file SHA-256. An incremental release also records the baseline release it used. Copy the manifest to `~/datasource-lab/private/releases/<release-id>/` on Mini. Read the summary and the hashes back.
+3. When the slot is new, or when you must regenerate its config, check the registration and the exclusive claim. On Mini, run `python3 cloudcanal-service/prepare-slot.py <slot>`. Add `--activate` only when you need to start the slot. For a JAR update that has a compatible baseline, reuse that slot's config, schema, and datasources.
 
-准备独立 Compose、Console 和 RDP schema、私有配置、卷、Worker 和监听端口。
+## Check idle, replace, and restart
 
-登记到 `slots.json`。
+Record the check result, the target slot, the components you plan to replace, and the rollback scope in the [Mini CHECK report](../../datasource-lab/references/check-report.md). Confirm environment cleanup from the inspection report.
 
-分支、执行者、槽位、Git SHA 和发布时间记在同一条发布记录里。
+Run an authorized Mini release after you hold the `write` claim and have checked that the Worker is idle. Create a backup only when the user explicitly asks, and do not ask again just to back up. Follow [Backups](backups.md).
 
-Mini 的访问主机名从 `mini.env` 读。
+1. From the skill directory on Air or Pro, run `python3 scripts/slot_claim.py status`. Keep the target slot's `write` claim when this session continues the same branch. Take the slot the first time with `python3 scripts/slot_claim.py acquire 03 --access write --machine Pro --agent Codex --run-id "$RELEASE_ID" --branch "$BRANCH"`. Request `--access read` when you create or verify jobs on the existing version and still need to hold the slot. Use the real machine and the real tool for `--machine` and `--agent`. Record a session you can verify with `--session-title`, `--session-id`, and `--session-url`, and use a link that opens. When `CODEX_THREAD_ID` is set, Codex records the session id on its own. Add `--new-slot` when the user explicitly asks for a new slot. Mini writes ownership to `private/.claim-<slot>/owner.json`. Save `claimId` and `claimedAt` from the receipt. Attach that `claimId` to each round's release record. The claim's `runId` records the first acquire. Each artifact round uses its own release id. Keep the claim until the user explicitly asks you to release it.
+2. Record `IDLE_CHECK_UTC` for the round. Use the UTC time after you hold the claim and at the start of this round's idle check. With the same agent's logged-in Console session that can see every job on that Worker, filter by the Worker and capture every job page. Query a known job from the previous round when that job is missing from the list. Each [Worker snapshot before release](browser-job.md#worker-snapshot-before-release) carries the real request origin, the Worker, and the capture time. Check this round's target slot, Worker, full page count, and job states with `python3 scripts/check_console_jobs.py idle --origin "$CONSOLE_ORIGIN" --worker "$WORKER" --not-before "$IDLE_CHECK_UTC" page-1.json page-2.json --job previous-job.json`. Pass one file for each real page, and pass each extra query. When a job is still running, you lack permission, or a page is missing, finish the evidence or switch to an idle slot.
+3. Check the target files against the real Compose project and the real mount points. Use the original release manifest and the existing artifacts as the recovery source for a rebuildable JAR. Before a metadata database migration starts, check the migration scope and the database rollback point. Use `apply-release-01.py` on Mini only for slot 01's first release. That script requires the slot to have no jobs and the target schema to be empty. For every other release, use `jar-volume.sh` to check, replace, restore, and read back against the real mounts and the manifest. You can also keep using a release entry already verified to support this slot.
+4. Before the release entry stops services, run `python3 scripts/slot_claim.py update 03 --claim-id "$CLAIM_ID" --phase deploying`. Continue only after that update succeeds. Keep the official ARM64 runtime image and the persistent volumes. Stop the services that load the JARs you are about to replace. Choose those services from the Compose mounts and from the processes that load the JARs. Restart those services after the replacement. A full release usually includes both Console and Sidecar.
+5. Read back the hash of every replaced file. Check the Console API, that this slot's Worker is `ONLINE`, and that Prometheus is scraping it. Then read the plugin version from the running process or the startup log. If a datasource or a driver changed, verify this round's Worker connections in [CloudCanal slot connection check](../../datasource-lab/SKILL.md#cloudcanal-slot-connection-check). When the JAR, the startup, or that connection check fails, follow the rollback plan and check again. After a metadata database migration, check this round's migration result.
+6. For a change that syncs, writes, or runs CHECK, run a real job by [API acceptance](api-job.md). Add page evidence only when the user asks to use the page. Store this round's artifacts, connection or job API receipts, native queries, and acceptance records in Mini's private directory. If a backup already exists, record its path under `/tmp/codex-backup` and follow [Backups](backups.md). Record the job state, the claim state, and whether the environment stays in [Release and handoff](#release-and-handoff).
 
-## 准备产物
+## Release and handoff
 
-新槽位第一次装这个分支，或现用产物版本无法确认时，先部署同一发布清单里的整套产物。
+When testing is finished, keep this round's `write` claim. Run `python3 scripts/slot_claim.py update 03 --claim-id "$CLAIM_ID" --phase awaiting-handoff --job-id 123 --note 'items still to verify'`. Put the real job id and the acceptance result in that command. Repeat `--job-id` for each extra job, and leave it out when there is no job. List the slot, the jobs, and the items still to verify in the handoff.
 
-复用槽位的持久卷、schema 和数据源。
+When `status` returns `allRegisteredClaimed: true`, list every slot from that same snapshot. Include the port, the machine, the run id, the branch, the session title, the session id, and `claimId`. Put a session link that opens on that slot's row. Locate the session by title or id when there is no link. Mark a field that an old record does not have as `not recorded`. Ask the user to open the matching chat and choose which claim to keep, which claim to release, or whether to add a slot. Keep every claim until the user decides.
 
-已有同分支且兼容的基线时，小改可以增量部署。
+When the user explicitly asks you to release one slot, check that claim and the current `claimId`. Run `python3 scripts/slot_claim.py release 03 --claim-id "$CLAIM_ID" --user-confirmed`. Before you take over a leftover claim, confirm with the user that the original session has ended, and confirm that no release or rollback is in progress on the slot. Mini compares the ids inside the slot's exclusive lock. A matching claim is archived under `private/claim-history/`. When the id has already changed, show the new holder and let the user decide. Jobs, datasources, JARs, and data stay. To deploy again after the claim is released, acquire the claim again and capture this round's Worker idle evidence.
 
-核对现用 JAR 的版本和哈希。
-
-按改动和共享依赖确定替换范围。
-
-涉及 Console 时，构建用槽位对应的 Maven profile。
-
-Mini 03 的 Console 使用 `-Poutput`。
-
-Gradle 插件的 `dev` 构建任务是另一套入口。
-
-1. 在 Air 或 Pro 的独立构建目录检出选定提交。
-   用项目实际的 JDK 17 和 Gradle 入口构建。
-   只改一个插件且共享依赖没变时，构建对应插件。
-   涉及 Schema 时，先把匹配的依赖发到本轮隔离的 Maven Local，再构建 CloudCanal。
-   会直接覆盖本机运行目录的安装脚本，只在隔离的构建目录和运行目录里用。
-2. 生成发布清单。
-   包含各仓库完整提交和必要的补丁摘要，以及每个 JAR 的组件、相对路径、原文件和新文件 SHA-256。
-   增量发布同时记录所用的基线发布。
-   传到 Mini 的 `~/datasource-lab/private/releases/<release-id>/`。
-   读回摘要和哈希。
-3. 新槽位或需要重新生成槽位配置时，核对登记和独占预留。
-   在 Mini 运行 `python3 cloudcanal-service/prepare-slot.py <槽号>`。
-   需要启动时才加 `--activate`。
-   已有兼容基线的 JAR 更新，直接复用该槽位的配置、schema 和数据源。
-
-## 空闲检查、替换与重启
-
-按 [Mini CHECK 报告模板](../../datasource-lab/references/check-report.md) 记录检查结果、目标槽位、计划替换的组件和回退范围。
-
-已授权的 Mini 发布，在取得 `write` 预留并核对 Worker 空闲后直接执行。
-
-用户没有明确要求时，不要创建备份。
-
-用户要求备份时，按 [备份](backups.md) 做。
-
-环境清理按巡检报告确认。
-
-1. 在 Air 或 Pro 的技能目录运行 `python3 scripts/slot_claim.py status`。
-   同一会话继续同一分支时，沿用已经持有的目标槽位 `write` 预留。
-   第一次占位运行 `python3 scripts/slot_claim.py acquire 03 --access write --machine Pro --agent Codex --run-id "$RELEASE_ID" --branch "$BRANCH"`。
-   现有版本上建任务或验证，又需要专门留住槽位时，申请 `--access read`。
-   机器和执行工具用实际值。
-   用 `--session-title`、`--session-id` 和 `--session-url` 记录能核实的会话。
-   链接填实际能打开的地址。
-   Codex 有 `CODEX_THREAD_ID` 时，自动记录会话 ID。
-   用户明确要求新增槽位时，加 `--new-slot`。
-   Mini 把归属写到 `private/.claim-<槽号>/owner.json`。
-   保存回执里的 `claimId` 和 `claimedAt`。
-   用 `claimId` 关联每轮发布记录。
-   预留的 `runId` 记录初次申请。
-   每轮产物用自己的发布 ID。
-   预留留到用户明确要求释放。
-2. 每轮记录 `IDLE_CHECK_UTC`。
-   取持有预留后、本轮空闲检查开始的 UTC 时间。
-   同一执行者用能看到该 Worker 全部任务的已登录 Console 会话，按 Worker 筛选，采集所有任务页。
-   上一轮已知任务没出现在列表里时，补查该任务。
-   每份 [Worker 取证快照](browser-job.md#发布前的-worker-快照) 都带实际请求来源、Worker 和采集时间。
-   用 `python3 scripts/check_console_jobs.py idle --origin "$CONSOLE_ORIGIN" --worker "$WORKER" --not-before "$IDLE_CHECK_UTC" page-1.json page-2.json --job previous-job.json` 核对本轮目标槽位、Worker、完整页数和任务状态。
-   按实际页数和补查传入文件。
-   遇到正在运行的任务、权限不足或分页缺失时，补齐证据，或换一个空闲槽位。
-3. 用实际 Compose 项目和挂载点核对目标文件。
-   可重建的 JAR 使用原发布清单和已有产物作为恢复来源，不额外备份。
-   用户要求备份时，按 [备份](backups.md) 创建并核对清单与哈希。
-   会迁移元数据库时，启动前核对迁移范围和数据库回退点。
-   Mini 的 `apply-release-01.py` 只用于 01 首次发布。
-   它要求槽位无任务，且目标 schema 为空。
-   其他发布用 `jar-volume.sh`，按实际挂载和清单校验、替换、还原和读回。
-   用户没有要求备份时，跳过自动备份。
-   用户要求备份时，用 `backup.py check-path` 核对目标。
-   容器里已有的暂存备份只移动。
-   不要复制，也不要追加。
-   也可以沿用已经核实支持该槽位的发布入口。
-4. 发布入口在停服务前运行 `python3 scripts/slot_claim.py update 03 --claim-id "$CLAIM_ID" --phase deploying`。
-   成功后再继续。
-   沿用官方 ARM64 运行镜像和持久卷。
-   按 Compose 挂载和进程加载范围，停止使用待换 JAR 的服务。
-   替换后重启这些服务。
-   全量发布通常同时涉及 Console 和 Sidecar。
-5. 读回全部替换文件的哈希。
-   核对 Console API、该槽位 Worker `ONLINE` 和 Prometheus 抓取。
-   再看实际进程或启动日志使用的插件版本。
-   数据源或驱动变更时，按 [Lab 槽位连接验收](../../datasource-lab/SKILL.md#cloudcanal-槽位连接验收) 验证本轮涉及的 Worker 连接。
-   JAR、启动或这次连接验收失败时，按回退计划处理并复核。
-   涉及元数据库迁移时，核对本轮实际迁移结果。
-6. 涉及同步、写入或 CHECK 的变更，按 [API 取证](api-job.md) 跑实际任务。
-   用户要求看页面时，才补页面证据。
-   本轮产物、连接或任务 API 回执、原生查询和验收记录存到 Mini 私有目录。
-   已经有备份时，只记下 `/tmp/codex-backup` 里的位置。
-   不要为了交付再追加一份备份。
-   按 [释放与交接](#释放与交接) 记录作业状态、预留状态，以及环境是否继续保留。
-
-## 释放与交接
-
-测试完成时，保留本轮 `write` 预留。
-
-运行 `python3 scripts/slot_claim.py update 03 --claim-id "$CLAIM_ID" --phase awaiting-handoff --job-id 123 --note '待验事项'`。
-
-填写实际任务 ID 和验收结果。
-
-多笔任务重复传 `--job-id`。
-
-没有任务时省略。
-
-交付里列出槽位、任务和待验事项。
-
-`status` 返回 `allRegisteredClaimed: true` 时，按同一份快照列出每个槽位。
-
-列出端口、机器、run ID、分支、会话标题、会话 ID 和 `claimId`。
-
-能打开的会话链接附在对应行。
-
-没有链接时，用标题或 ID 定位。
-
-旧记录缺少的字段标为「未记录」。
-
-请用户打开相应对话，决定保留、释放哪一条，或另行新建槽位。
-
-用户决定前，保留所有预留。
-
-用户明确要求释放某个槽位时，核对该条预留和当前 `claimId`。
-
-执行 `python3 scripts/slot_claim.py release 03 --claim-id "$CLAIM_ID" --user-confirmed`。
-
-接手遗留预留时，先向用户核实原会话已结束，并确认现场没有进行中的发布或回退。
-
-Mini 在槽位独占锁内比较 ID。
-
-匹配的预留归档到 `private/claim-history/`。
-
-ID 已经变化时，重新展示新持有者，由用户决定。
-
-任务、数据源、JAR 和数据保留。
-
-释放后如果还要部署，重新申请，并采集本轮 Worker 空闲证据。
-
-在现有版本上建任务、启动、继续或停止任务时，直接使用 Mini Console。目标槽位正在替换组件时，用其他可用 Console，或等重启结束。
+Create, start, continue, or stop a job on the existing version directly in the Mini Console. While the target slot is replacing components, use another Console that is up, or wait until the restart finishes.
