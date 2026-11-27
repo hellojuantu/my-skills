@@ -62,7 +62,7 @@ python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" call-service \
   --service ccDataJobCreate --payload-json @DataJobData.json --dry-run
 ```
 
-Do this for automation you will hand to someone else, until `create-job` has been dry-run compared with that exact frontend payload. Delete a captured payload after verification if it contains passwords, ids, or table names that should not be shared.
+For automation you will hand to someone else, compare `create-job --dry-run` with the payload derived from frontend source, types, service definitions, or an existing captured request. A new browser capture is not required. Delete a captured payload after verification if it contains passwords, ids, or table names that should not be shared.
 
 ## Modes
 
@@ -88,9 +88,9 @@ Current frontend-aligned branches:
 - non-hasSchema source to a hasSchema target: `DB_SCHEMA`, `TABLE_TABLE`, and `COLUMN_COLUMN`.
 - DynamoDB source or target: no-db table mapping.
 
-## Frontend trace required
+## Verify advanced request contracts
 
-Do not rely on the simplified builder alone for these cases. Capture the frontend request. Replay the request. Or compare the simplified builder against the request.
+Do not rely on the simplified builder alone for these cases. Derive the exact request from frontend source, types, service definitions, and dynamic WebOp, then compare the builder in dry-run or pass the verified JSON. Use browser capture only when the user explicitly requests page operation.
 
 - `processorConfigList`: virtual columns, implicit columns, field transforms, wide tables, LLM embedding or chat.
 - Table-level data filters and target update conditions: `dataFilter`, `dstUpdateCondition`.

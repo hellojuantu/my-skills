@@ -25,7 +25,7 @@ python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" operate-jobs \
   --action restart --job-id 21,22 --dry-run
 ```
 
-Use `continue-job` only for the post-structure state the frontend handles with `fsmStart`. Structure migration is complete, `fsmActive=false`, and the full or increment tasks are still waiting. For ordinary lifecycle work use `start-job`, `stop-job`, `restart-job`, or `replay-job`.
+Use `continue-job` for the first FSM activation handled by the frontend `fsmStart` action: `fsmActive=false` and `dataTaskState=INIT`. If BUILD_STRUCT exists, it must be COMPLETE; without structure migration, the same inactive INIT state also needs activation. A newly created `autoStart=false` job can have `currTaskStatus=UNKNOWN` and no current task id, so ordinary `start-job` fails with "current task id empty". Query creation success before activation. After a previously activated job is stopped, use ordinary `start-job` to resume. `WAIT_START` is a scheduler state, not a reason to activate again.
 
 Run these commands against the existing slot's Console. They do not read or release a slot claim. For a deployment and its handoff, follow the [Mini release workflow](../../../cloudcanal-dev-test/references/mini-release.md).
 

@@ -116,13 +116,13 @@ Dry-run these fields. Inspect these fields.
 - An ES target uses `{ "indexName": "...", "fields": [], "idFieldNames": [] }`.
 - `COLUMN_COLUMN` is present for DB-source branches even when no explicit column mappings are set.
 
-## When to trace the browser
+## When to verify the request contract
 
-Use the frontend directly, or browser automation, when the request involves any of these.
+Inspect frontend source, types, service definitions, and dynamic WebOp when the request involves any of these. Compare the resulting request in dry-run. Use a browser only when the user explicitly requests page operation.
 
 - A complex edit-subscription reduce or remap.
 - Table-level partition expressions, Hive partition settings, Greptime time indexes, or StarRocks, Doris, and SelectDB partition details.
 - LLM or RagApi processors, virtual columns, implicit columns, or a custom package processor.
 - A datasource type or source-target pair that has not been dry-run compared yet.
 
-Capture the frontend request payload. Pass it through `--*-json @file`. Or update the automation.
+Build the verified payload from those contracts and pass it through `--*-json @file`, or update the automation. An existing captured request can also be replayed; a new browser capture is optional.

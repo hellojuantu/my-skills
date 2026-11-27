@@ -2,6 +2,7 @@
 
 | 规则 | 执行检查 |
 | --- | --- |
+| 只在有改动的仓库切换任务分支。 | 没有自动检查。交付时看各仓库当前分支。 |
 | 读 Console 返回值时，一个值只用接口里的那一个字段。不要再写 `fsmId` / `fsmID` 这种别名。 | `python3 cloudcanal-console-automation/scripts/check_console_field_aliases.py` |
 | 启动任务不查槽位预留。 | `python3 cloudcanal-console-automation/scripts/check_no_invented_gates.py` |
 | Mini 控制台主机名从 `mini.env` 读取。不要在脚本里写死 `http://mini:`。 | `python3 cloudcanal-console-automation/scripts/check_mini_host.py` |
@@ -9,3 +10,6 @@
 | Mini 发布在停服务前校验本轮 `claimId`，用 `write` 预留进入 `deploying`。已授权的发布直接执行。 | `python3 cloudcanal-dev-test/scripts/test_slot_claim_access.py` 检查 `read` 预留无法进入发布阶段。 |
 | Mini 测完保留原写预留，更新为 `awaiting-handoff`。全占用时列出会话供用户打开和决定。用户明确要求后才释放指定预留。 | `slot_claim.py release` 要求 `--user-confirmed` 并核对当前 `claimId`。在 Mini 运行 `python3 cloudcanal-dev-test/tests/test_slot_claim.py` 验证交接、全占用和旧 ID。 |
 | 本轮新建并启动的 Mini 增量验收任务在目标读回后停止。用户要求继续运行时记录状态。 | `check_console_jobs.py stopped-test-job` 核对停止后的同一任务回执。 |
+| SSH 复核在 Chrome 里点已登录的 Google 账号。页面要求密码、MFA 或验证码时，才交给用户。 | `python3 -m unittest cloudcanal-dev-test.tests.test_ssh_auth` |
+| 用户没有明确要求时，不要创建备份。 | `python3 -m unittest cloudcanal-dev-test.tests.test_backup` 只检查路径和权限。 |
+| 测试默认走 Console API。用户要求看页面时，才打开浏览器。 | `check_console_jobs.py api-job` 接受没有截图的证据。 |

@@ -37,7 +37,7 @@ After you create or edit a job:
 5. Start only when asked, or when `--start-after-create` is part of the plan.
 6. Do not delete a temporary test job unless the user asks for cleanup.
 
-For a CloudCanal change, finish the real [Console page acceptance](../../../cloudcanal-dev-test/references/browser-job.md). Record the page URL, job ID, result, and any blocked step. Use CLI readback as supporting evidence.
+For a CloudCanal change, use [API acceptance](../../../cloudcanal-dev-test/references/api-job.md). Record the Console origin, actual API response, job ID, saved config, state, and native target readback. Use pages and screenshots only when the user explicitly requests page operation.
 
 Report the environment URL and cluster id. Report datasource ids or job ids you created. Report the connection or precheck result, the job state, and any consistency check you were asked to run. When an async step fails, report the console job id and the failed step. Report cleanup you took. Name any branch that was only dry-run verified.
 

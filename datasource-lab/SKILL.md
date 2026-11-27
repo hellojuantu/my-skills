@@ -63,7 +63,9 @@ MotherData 入口是 `http://mini:8765/`。
 
 升级应用时按 [Mini 发布流程](skills/lab-motherdata-deploy/SKILL.md) 锁定 Gitee `master` 提交。
 
-在隔离副本上验证 Flyway，再备份切换。
+在隔离测试副本上验证 Flyway，再切换。
+
+用户没有明确要求时，不要创建回退备份。
 
 MotherData 元数据在共享 MySQL 的 `motherdata` 库。
 
@@ -149,11 +151,11 @@ CloudCanal 这边优先用已有 ID 映射。
 
 ## CloudCanal 槽位连接验收
 
-添加数据源、发布或全量同步之后，在每个涉及槽位的真实 Console 页面，对本轮涉及实例的常规登记运行 **Test Connection**。
+添加数据源、发布或全量同步之后，默认通过 Console API 对每个涉及槽位和实例的常规登记运行 **Test Connection**。只有用户明确要求页面操作时才用页面。
 
-在弹窗里选对应的 Worker 集群和网络入口。
+在 API 参数中选择对应的 Worker 集群和网络入口。
 
-留下页面结果。
+留下实际 API 回执。
 
 手工实例按 `labRecord` 关联证据。
 
@@ -167,11 +169,11 @@ CloudCanal 这边优先用已有 ID 映射。
 
 把本轮开始时间、各槽位预期的 Worker 集群和常规登记写成 `expected.json`。
 
-`evidence.json` 的 `results` 每项包含 `pageUrl`、`instanceId`、`cluster`、`status` 和带时区的 `testedAt`。
+默认 `evidence.json` 的 `results` 每项包含连接 API 的 `requestUrl`、`instanceId`、`cluster`、`status` 和带时区的 `testedAt`。`requestUrl` 使用实际 `/cloudcanal/console/api/v1/inner/datasource/connection` 请求。
 
-页面显示连接成功时，把 `status` 记为 `Successful`。
+Worker 的 API 回执显示连接成功时，把 `status` 记为 `Successful`。
 
-保留原始页面证据。
+保留脱敏后的原始 API 证据。用户要求页面验收时才保存 `pageUrl`，并给检查命令传 `--evidence-kind browser`。
 
 三个文件只用脱敏字段。
 
@@ -198,7 +200,7 @@ python3 scripts/check-slot-connections.py motherdata.json expected.json evidence
 
 每个涉及槽位的全部待验实例，都要有本轮 Worker 的 `Successful` 结果。
 
-`check-slot-connections.py` 用全量目录核实 ID，再校验所选范围的槽位页面、登记、Worker 集群、结果和时间。
+`check-slot-connections.py` 用全量目录核实 ID，再校验所选范围的 Console API 来源、登记、Worker 集群、结果和时间。
 
 缺失或失败时，按槽位和实例保留原始提示，并用实测结果更新验收状态。
 
@@ -263,7 +265,8 @@ CHECK 阶段用只读探针，并归档证据。
    发布、配置修复和清理按报告逐项等用户确认。
    确认后，核对台账是否仍对应该次快照。
    改过连接地址、目标库或认证配置的记录必须重新实测。
-   备份当前版本后原子发布，再核对 ID 和条数。
+   根据已有快照原子发布，再核对 ID 和条数。
+   用户要求备份时，按 [备份](../cloudcanal-dev-test/references/backups.md) 做。
 
 可以从 Air 或 Pro 的 skill 目录做只读比较。
 
@@ -317,13 +320,13 @@ ssh -o BatchMode=yes mini 'cat ~/datasource-lab/datasource-fixtures/seed-run.py'
 
 唯一性或配置冲突时停止。
 
-在已登录的真实页面用 Worker 集群测试连接。
+默认通过同槽位 Console API 用 Worker 集群测试连接。
 
 记下实际 CloudCanal 数据源 ID。
 
 JAR 发布复用槽位元数据库和已有登记。
 
-分支部署和真实页面验收用 [CloudCanal 开发与实库验收](../cloudcanal-dev-test/SKILL.md)。
+分支部署和 API 自动化验收用 [CloudCanal 开发与实库验收](../cloudcanal-dev-test/SKILL.md)。
 
 ## 磁盘、镜像与清理确认
 

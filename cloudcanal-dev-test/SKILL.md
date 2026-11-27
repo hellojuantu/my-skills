@@ -5,13 +5,21 @@ description: 在 Air 或 Pro 开发和构建 CloudCanal，在 Mini 运行测试�
 
 # CloudCanal 开发与实库验收
 
-Air 和 Pro 用来写代码、构建。单测、前端测试、组件测试、JDBC 程序和测试服务都在 Mini 上跑。浏览器可以从 Air 或 Pro 打开 Mini Console。
+Air 和 Pro 用来写代码、构建。单测、前端测试、组件测试、JDBC 程序和测试服务都在 Mini 上跑。
+
+默认用 [Console API 自动化](../cloudcanal-console-automation/SKILL.md) 创建、配置、运行和验收测试。
+
+用户要求看页面时，才打开浏览器。
 
 新的测试库优先用 Mini 上已经登记的实例。
 
+用户没有明确要求时，不要创建备份。
+
+用户要求备份时，按 [备份](references/backups.md) 做。
+
 没有合适实例时，按 [手工部署到 Mini](../datasource-lab/SKILL.md#手工部署到-mini) 安装并登记。
 
-只用现有版本建任务或查看任务时，直接打开对应的 Mini Console。
+只用现有版本建任务或查看任务时，直接调用对应 Mini Console 的 API。
 
 要加载这轮改过的代码、换 JAR 或重启服务时，才走 [发布槽位](references/mini-release.md)。
 
@@ -26,6 +34,10 @@ python3 scripts/run_mini_test.py --workdir '<Mini 目录>' -- <命令> <参数>
 ## 一轮改动怎么做
 
 1. 先写清范围。
+   只在有改动的仓库创建或切换任务分支。
+   没改的仓库留在原来的分支。
+   构建依赖时，用指定 SHA 的独立检出。
+   不要把没改的仓库切到同名分支。
    记下正常入口、最小复现和能观察到的结果。
    记下涉及的仓库、源端、目标端和任务类型。
    记下每个仓库的分支、完整 HEAD，以及这轮补丁包含哪些文件。
@@ -46,17 +58,17 @@ python3 scripts/run_mini_test.py --workdir '<Mini 目录>' -- <命令> <参数>
    需要发布时，按 [槽位发布](references/mini-release.md) 独占一个空槽位。
    槽位都被占时，列出持有者，等用户看过会话再决定。
    槽位上缺测试库时，按 [数据源实验室](../datasource-lab/SKILL.md) 补。
-4. 最后在已经登录的 Mini Console 上按真实操作验收。
+4. 最后通过 Mini Console API 自动化验收。
    数据源或驱动有改动时，做 [槽位连接验收](../datasource-lab/SKILL.md#cloudcanal-槽位连接验收)。
    把每条 Worker 连接写进 [Mini CHECK 报告](../datasource-lab/references/check-report.md)。
-   数据任务按 [页面取证](references/browser-job.md) 保存任务 ID、页面和状态，再从目标端把数据读回来。
+   数据任务按 [API 取证](references/api-job.md) 保存请求来源、任务 ID 和状态，再从目标端把数据读回来。
    准备配置和查询用 [Console 自动化](../cloudcanal-console-automation/SKILL.md)。
-   遇到登录页、单点登录或身份复核，停下来交给用户。
+   使用同槽位的 Automation 登录会话；API 确实返回需要人工完成的身份复核时，报告原始提示。
    SSH 要求 Tailscale 复核时，按 [Mini SSH 身份复核](skills/cc-setup/SKILL.md#mini-ssh-身份复核) 打开链接。
-   页面没走完时，写明停在哪一页、提示是什么、还没做的步骤。
+   API 操作失败时，记录接口、任务 ID、原始错误和未完成步骤。用户要求页面操作时，按 [页面取证](references/browser-job.md) 保存页面证据。
 5. 收尾。
    按 [新建增量验收任务收尾](references/browser-job.md#新建增量验收任务收尾) 停掉这轮为了验收新建的增量任务。
-   交付里写 Mini Console 入口、任务 ID、页面结果和目标读回。
+   交付里写 Mini Console 入口、任务 ID、API 结果和目标读回。
    发布过时，附上各仓库 SHA、槽位，以及已加载 JAR 的校验。
 
 ## 验收规则与检查
@@ -83,7 +95,7 @@ python3 scripts/run_mini_test.py --workdir '<Mini 目录>' -- <命令> <参数>
 
 Mini Automation 用自己的 `login --save-cookie` 拿到这个槽位的会话。
 
-页面操作用这个槽位已经登录的浏览器。
+用户明确要求页面操作时，用这个槽位已经登录的浏览器。
 
 登录或身份复核要交接时，把页面提示留下来。
 
@@ -97,7 +109,7 @@ Console 的端到端结果要带这轮任务 ID。
 
 组件实测要写明实际跑到的读写阶段。
 
-`browser-job` 核对页面、任务和启动状态。
+默认用 `api-job` 核对 API 创建、任务和启动状态；用户要求页面时才用 `browser-job` 核对截图与页面来源。
 
 `fresh-check` 核对这轮 CHECK 子任务的完成时间。
 
@@ -109,13 +121,13 @@ Console 的端到端结果要带这轮任务 ID。
 
 ## 数据链路怎么验
 
-在这轮 Console 向导里选真实的源、目标和 Worker 集群。
+通过 Console API 查询并选择真实的源、目标和 Worker 集群。
 
 看连接、订阅对象和关键参数。
 
-保存并启动后，打开同一个任务详情。
+保存后用 API 读回配置与映射；启动后查询同一个任务及其子任务状态。
 
-用例要求自动建目标对象时，核对页面选项，再用目标引擎自己的入口确认对象已经建出来。
+用例要求自动建目标对象时，核对 API 保存的选项，再用目标引擎自己的入口确认对象已经建出来。
 
 全量核对事先放好的样本。
 
@@ -127,7 +139,7 @@ Console 的端到端结果要带这轮任务 ID。
 
 链路支持校验而且用例要求时，建一轮独立的 CHECK，或从已结束的任务重跑。
 
-保存页面结果和这轮任务快照。
+保存 API 结果和这轮任务快照。
 
 用 `scripts/check_console_jobs.py fresh-check` 核对完成时间、任务 ID 和是不是这轮新跑的。
 

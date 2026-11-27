@@ -9,9 +9,11 @@ description: Drive CloudCanal Console through its login session and frontend API
 
 Use the Console frontend APIs.
 
-Before an unverified datasource pair, read the real frontend request, the dynamic WebOp, or the generated body. Build parameters from the levels, mappings, and connection settings that engine supports.
+Default to API automation for test creation, configuration, execution, and acceptance. Operate Console pages only when the user explicitly asks. API evidence plus native target readback is the default acceptance path.
 
-Page acceptance for a CloudCanal change follows [CloudCanal dev test](../cloudcanal-dev-test/SKILL.md).
+Before an unverified datasource pair, inspect frontend source, types, service definitions, dynamic WebOp, or an existing request. Build parameters from the levels, mappings, and connection settings that engine supports. An unfamiliar pair does not require opening a page or capturing a browser request.
+
+Acceptance for a CloudCanal change follows [API evidence and native readback](../cloudcanal-dev-test/references/api-job.md).
 
 Run scripts from this skill directory.
 
@@ -38,7 +40,7 @@ On first setup, run `doctor`. It checks Python, Node, `sm-crypto`, an optional `
 3. Before create, edit, update, position change, or schedule change, check the request with `--dry-run`.
 4. In a test environment, write temporary jobs and datasources first. After the user authorizes cleanup, follow [cleanup](skills/cc-validation/SKILL.md#cleanup-only-when-requested-by-the-user).
 5. After create or edit, read the saved object back. Run a connection test on its own when the datasource connection must be checked.
-6. After a structure, full, and increment job is created, check its state. When structure is finished, `fsmActive=false`, and the following task is still `INIT`, run `continue-job` so the frontend `fsmStart` path runs.
+6. After async creation succeeds, query the job. When `fsmActive=false` and `dataTaskState=INIT`, use `continue-job` for the frontend `fsmStart` path. If a BUILD_STRUCT task exists, it must be COMPLETE first; jobs without structure migration also need this first activation. Use ordinary `start-job` when restarting a previously activated job after stopping it.
 
 Prefer Lab-registered databases for Mini link tests. When a new instance is required, prepare it with [Datasource Lab](../datasource-lab/SKILL.md). Then register it. Operate the job from this skill. Record read-only inspection results in the [Mini CHECK report](../datasource-lab/references/check-report.md). Apply the authorized scope. Use the report to confirm any cleanup.
 

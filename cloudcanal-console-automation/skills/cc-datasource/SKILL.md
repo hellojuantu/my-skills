@@ -9,7 +9,7 @@ Use `$CLOUDCANAL_SKILL/scripts/create_datajob.py` for datasource operations. The
 
 ## Access model
 
-Reuse the same-origin Automation session from `login --save-cookie`. Use the browser's existing login for Console page checks. Switch to OpenAPI only when the user asks for it.
+Reuse the same-origin Automation session from `login --save-cookie`. Default to Console API creation, configuration, connection checks, and readback. Use the browser's existing login only when the user explicitly requests Console page operation. Switch to OpenAPI only when the user asks for it.
 
 ```bash
 python3 "$CLOUDCANAL_SKILL/scripts/create_datajob.py" login \
@@ -157,4 +157,4 @@ LLM datasource config is available through `query-llm-config --data-source-id ID
 
 A frontend before-add test is separate from a saved-datasource test. Use the named `test` command after add. Use `call-service --service ccDataSourceTestConnectionBeforeAdd` only when you need the pre-add check on purpose.
 
-When a datasource-specific frontend API is not named here, use `call-service --service ... --dry-run` with the payload captured in the browser. Add a named command only after the same workflow repeats. Use `call-api --path ...` only when you have a raw path.
+When a datasource-specific frontend API is not named here, use `call-service --service ... --dry-run` with a payload derived from frontend source, types, service definitions, or dynamic WebOp. Add a named command only after the same workflow repeats. Use `call-api --path ...` only when you have a raw path.

@@ -1,6 +1,10 @@
 # 采集 Console 页面建任务证据
 
-用现有版本创建任务时，直接打开对应的 Mini Console。
+默认验收走 [API 自动化](api-job.md)。本页的页面创建与截图步骤只在用户明确要求操作页面时执行；后面的任务收尾、原生读回与 Worker API 快照也适用于默认 API 流程。
+
+## 用户要求页面时
+
+用现有版本创建任务时，打开用户指定的 Mini Console，通过 CUA 操作。
 
 需要部署时，按 [发布流程](mini-release.md) 进入本轮独占的槽位。
 
@@ -135,7 +139,7 @@ python3 scripts/check_console_jobs.py browser-job "$directory" "$directory/query
 
 停任务时用创建回执里的 Console 入口和任务 ID。
 
-在同一详情页点击停止，或使用 [cc-job-operations 的 `stop-job`](../../cloudcanal-console-automation/skills/cc-job-operations/SKILL.md#lifecycle)。
+默认使用 [cc-job-operations 的 `stop-job`](../../cloudcanal-console-automation/skills/cc-job-operations/SKILL.md#lifecycle)；用户要求页面时可在同一详情页点击停止。
 
 停止后刷新同一任务。
 
@@ -162,7 +166,7 @@ python3 scripts/check_console_jobs.py stopped-test-job --origin "$CONSOLE_ORIGIN
 
 ## 已有任务和连接测试
 
-换包后恢复已有任务时，用同一任务详情页和 `queryjob` 核对任务 ID、子任务 ID 和状态。
+换包后恢复已有任务时，用 `queryjob` 核对任务 ID、子任务 ID 和状态；页面只在用户要求时打开。
 
 涉及增量续跑时，记下停止前的持久化位点，以及恢复后的位点或读端状态。
 
@@ -174,7 +178,7 @@ python3 scripts/check_console_jobs.py stopped-test-job --origin "$CONSOLE_ORIGIN
 
 只改连接或驱动时，保存真实 Console 的数据源 ID、Worker 集群、连接选项和结果。使用协议兼容的测试服务端时，写明实际引擎和验证范围。
 
-已经确认 CHECK 在本轮达到 `COMPLETE`，并且保存了检查行数、差异数和漏行数时，截图定位超时就按原任务 ID 重新打开详情，只读补拍。
+用户要求页面，且已经确认 CHECK 在本轮达到 `COMPLETE`、保存了检查行数、差异数和漏行数时，截图定位超时就按原任务 ID 重新打开详情，只读补拍。
 
 把页面显示的计数和已保存的 `query-job` 结果核对。
 
@@ -267,4 +271,4 @@ python3 scripts/check_console_jobs.py phase-readback "$directory/compare.tsv" --
 
 ## 待办
 
-CHECK 向导自动化还没做。等源库选择在页面上生效并稳定后，再选目标库，并复核目标库选择仍然有效。按实际库表定位 CHECK 结果行并截图。
+CHECK 默认通过 API 创建和查询。用户要求使用 CHECK 向导时，等源库选择在页面生效并稳定后再选目标库，复核选择并按实际库表定位结果。
