@@ -1,0 +1,12 @@
+name: Operational backup storage
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  backup-storage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s cloudcanal-dev-test/tests -p test_backup.py
