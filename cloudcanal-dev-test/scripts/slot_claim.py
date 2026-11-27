@@ -276,6 +276,8 @@ def on_mini(args):
 
 
 def forward_to_mini(args):
+    from ssh_auth import SshAuthReporter
+
     if args.root is not None:
         raise ValueError("An alternate root is only supported when running directly on Mini")
     command = ["/usr/bin/python3", "-", "--on-mini", *sys.argv[1:]]
@@ -292,19 +294,32 @@ def forward_to_mini(args):
                 command.extend(["--session-id", session_id])
     env = load_mini_env()
     remote = f"CC_MINI_HOSTNAME={shlex.quote(env['MINI_HOSTNAME'])} {shlex.join(command)}"
-    result = subprocess.run(
-        ["ssh", "-T", "-o", "BatchMode=yes", env["MINI_SSH_HOST"], remote],
-        input=Path(__file__).read_text(encoding="utf-8"), stdout=subprocess.PIPE, text=True,
-    )
+    auth = SshAuthReporter()
+    # The script is also sent to Mini alone, so the local browser helper is imported only above.
+    with tempfile.TemporaryFile(mode="w+t", encoding="utf-8") as source, tempfile.TemporaryFile(mode="w+t", encoding="utf-8") as output:
+        source.write(Path(__file__).read_text(encoding="utf-8"))
+        source.seek(0)
+        with subprocess.Popen(
+            ["ssh", "-T", "-o", "BatchMode=yes", env["MINI_SSH_HOST"], remote],
+            stdin=source, stdout=output, stderr=subprocess.PIPE, text=True,
+        ) as ssh:
+            for line in ssh.stderr:
+                print(line, end="", file=sys.stderr, flush=True)
+                auth.observe(line)
+            transport_status = ssh.wait()
+        output.seek(0)
+        reply_text = output.read()
     try:
-        reply = json.loads(result.stdout)
+        reply = json.loads(reply_text)
         if isinstance(reply, dict) and type(reply.get("ok")) is bool:
-            print(result.stdout, end="")
-            return result.returncode or int(not reply["ok"])
+            print(reply_text, end="")
+            return transport_status or int(not reply["ok"])
     except ValueError:
         pass
+    if auth.url is not None:
+        return transport_status or 1
     print("Mini did not return a claim result", file=sys.stderr)
-    return result.returncode or 1
+    return transport_status or 1
 
 
 def main():

@@ -9,6 +9,7 @@ import subprocess
 import sys
 
 from mini_names import MINI_NAME_KEYS, mini_env_path, read_values
+from ssh_auth import SshAuthReporter
 
 
 def load_mini_env():
@@ -49,6 +50,7 @@ def main():
     # Mini's SSH service can return zero after a failed remote command. Read the runner's own status.
     status = None
     refused = False
+    auth = SshAuthReporter()
     with runner.open('rb') as script, subprocess.Popen(
         ['ssh', '-T', '-o', 'BatchMode=yes', mini['MINI_SSH_HOST'], remote], stdin=script, stderr=subprocess.PIPE
     ) as ssh:
@@ -61,9 +63,12 @@ def main():
                     refused = True
                 sys.stderr.buffer.write(line)
                 sys.stderr.buffer.flush()
+                auth.observe(line.decode("utf-8", errors="replace"))
         transport_status = ssh.wait()
     if status is None and refused:
         return 1
+    if status is None and auth.url is not None:
+        return transport_status or 1
     if status is None:
         print('Mini did not return a test exit code. Check the SSH connection and Mini working directory.', file=sys.stderr)
         return transport_status or 1

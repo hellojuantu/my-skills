@@ -1,0 +1,13 @@
+name: Mini SSH authentication guidance
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  ssh-guidance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s cloudcanal-dev-test/tests -p test_ssh_auth.py
+      - run: python3 -m unittest discover -s cloudcanal-dev-test/tests -p test_mini_runner.py

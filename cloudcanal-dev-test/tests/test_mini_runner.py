@@ -29,7 +29,7 @@ class MiniRunnerTest(unittest.TestCase):
             local.mkdir(parents=True)
             remote.mkdir(parents=True)
             config.parent.mkdir(parents=True)
-            for name in ('run_mini_test.py', 'mini_names.py', GUARD.name):
+            for name in ('run_mini_test.py', 'mini_names.py', 'ssh_auth.py', GUARD.name):
                 shutil.copy2(GUARD.with_name(name), local)
             shutil.copy2(GUARD.with_name('mini_names.py'), remote)
             hostname = subprocess.check_output(['hostname', '-s'], text=True).strip()

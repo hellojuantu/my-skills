@@ -42,11 +42,11 @@ Console 会话和 Lab 页面按 `MINI_HOSTNAME`、`MINI_TAILSCALE_NAME`、`MINI_
 
 ## Mini SSH 身份复核
 
-在 Google Chrome 打开 SSH 返回的 Tailscale 复核链接。
+`run_mini_test.py` 和 `slot_claim.py` 认出复核链接后，会打印 Chrome 里的操作步骤。
 
-优先使用 Chrome 里已经登录的 Google 账号完成复核，成功后重试原来的 SSH 命令。
+按那些步骤，用已登录的 Google 账号完成复核。
 
-需要用户本人操作时，把当前链接留给他。
+直接运行其他 SSH 命令时，把本轮链接传给同一个入口：`python3 cloudcanal-dev-test/scripts/ssh_auth.py '<SSH 返回的 Tailscale 复核链接>'`。
 
 ## 链接技能
 
