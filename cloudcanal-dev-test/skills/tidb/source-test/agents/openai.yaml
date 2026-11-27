@@ -1,0 +1,4 @@
+interface:
+  display_name: "CloudCanal TiDB Source Test"
+  short_description: "Run and verify CloudCanal TiDB source CDC regression tests."
+  default_prompt: "Run CloudCanal TiDB source CDC tests. Ask for log host/path, source database credentials, target database credentials, and note any deadline parameter changes needed."

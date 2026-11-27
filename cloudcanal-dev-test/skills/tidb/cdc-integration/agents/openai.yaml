@@ -1,0 +1,4 @@
+interface:
+  display_name: "CloudCanal TiDB CDC Integration Test"
+  short_description: "Run TiDB V1/V2 and 18-case CDC regression tests"
+  default_prompt: "Use $cloudcanal-tidb-cdc-integration-test to run and report the complete TiDB CDC integration suite."
