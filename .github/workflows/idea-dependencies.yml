@@ -1,0 +1,12 @@
+name: IDEA dependency sync
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  idea-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest cloudcanal-dev-test.tests.test_sync_idea_dependencies

@@ -48,16 +48,23 @@ def current_versions(workspace):
     ]
 
 
+def artifact_matches(artifact, names):
+    for name in names:
+        if name == "" or (name.endswith("-") and artifact.startswith(name)) or artifact == name:
+            return True
+    return False
+
+
 def artifact_files(source, versions):
     coordinates = set()
     for pom in (source / "com/clougence").rglob("*.pom"):
         relative = pom.relative_to(source)
         group = ".".join(relative.parts[:-3])
         artifact, version = relative.parts[-3:-1]
-        if any(group == g and artifact.startswith(names) and version == v for g, names, v in versions):
+        if any(group == g and artifact_matches(artifact, names) and version == v for g, names, v in versions):
             coordinates.add((group, artifact, version))
     for group, names, version in versions:
-        if not any(g == group and a.startswith(names) and v == version for g, a, v in coordinates):
+        if not any(g == group and artifact_matches(a, names) and v == version for g, a, v in coordinates):
             raise ValueError(f"Build repository has no {group}:{'/'.join(names) or '*'}:{version}; build this dependency first")
 
     pending = sorted(coordinates)
