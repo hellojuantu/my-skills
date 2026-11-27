@@ -121,6 +121,23 @@ class BrowserJobTest(unittest.TestCase):
         jpg.write_bytes(PNG)
         self.run_gate(1, "detail.jpg")
 
+    def test_api_job_accepts_create_and_query_without_a_page_or_screenshot(self):
+        self.create.pop("pageUrl")
+        self.write("create.json", self.create)
+        self.save_query(self.job)
+        command = [sys.executable, str(GATE), "api-job", str(self.evidence), str(self.query)]
+        result = subprocess.run(command, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("1816", result.stdout)
+        self.assertFalse((self.evidence / "detail.json").exists())
+
+        for change, origin in (({"dataJobId": 1817}, CONSOLE), ({}, "http://mini:8112"),
+                               ({"dataTasks": [{"dataTaskId": 110, "dataTaskType": "FULL", "dataTaskStatus": "INIT"}]}, CONSOLE)):
+            with self.subTest(change=change, origin=origin):
+                self.save_query({**self.job, **change}, origin)
+                result = subprocess.run(command, capture_output=True, text=True)
+                self.assertEqual(result.returncode, 1, result.stdout)
+
     def test_idle_binds_every_snapshot_to_worker_slot_and_current_release(self):
         captured = datetime.now(timezone.utc) - timedelta(seconds=1)
         start = (captured - timedelta(seconds=2)).isoformat()

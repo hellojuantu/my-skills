@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify saved Worker, browser job, CHECK, or phase readback evidence."""
+"""Verify saved Console API, requested browser, CHECK, or phase readback evidence."""
 
 import argparse
 import csv
@@ -209,7 +209,7 @@ def browser_route(record, field, where):
         raise ValueError(f"{where}: missing {field}")
     url = urlsplit(value)
     if url.scheme not in {"http", "https"} or not url.hostname or url.username or url.password:
-        raise ValueError(f"{where}: expected a Console browser URL in {field}")
+        raise ValueError(f"{where}: expected a Console URL in {field}")
     if field == "requestUrl" and url.fragment:
         raise ValueError(f"{where}: expected an HTTP request URL without a fragment")
     route = urlsplit(url.fragment).path if field == "pageUrl" and url.fragment.startswith("/") else url.path
@@ -264,38 +264,51 @@ def check_detail_screenshot(directory):
         raise ValueError(f"{path}: screenshot bytes must match its PNG or JPEG extension")
 
 
-def check_browser_job(directory, query):
-    create_path = directory / "create.json"
+def created_job(create_path):
     create = read_snapshot(create_path)
     job_id = required_id(create, "dataJobId", create_path)
-    origin, wizard = browser_route(create, "pageUrl", create_path)
-    api_origin, endpoint = browser_route(create, "requestUrl", create_path)
-    if (wizard != "/data/job/create/process" or origin != api_origin
-            or endpoint != "/cloudcanal/console/api/v1/inner/datajob/create"):
-        raise ValueError(f"{create_path}: record the creation request from the Console wizard")
+    origin, endpoint = browser_route(create, "requestUrl", create_path)
+    if endpoint != API + "create":
+        raise ValueError(f"{create_path}: record the Console create API request")
     status = create.get("httpStatus")
     if (create.get("method") != "POST" or type(status) is not int or not 200 <= status < 300
             or str(create.get("code")) != "1"):
-        raise ValueError(f"{create_path}: the wizard must return a successful create response")
+        raise ValueError(f"{create_path}: expected a successful create API response")
+    return create, origin, job_id
 
-    detail_path = directory / "detail.json"
-    detail = read_snapshot(detail_path)
-    if browser_route(detail, "pageUrl", detail_path) != (origin, f"/data/job/{job_id}"):
-        raise ValueError(f"{detail_path}: open job {job_id} on the same Console and capture its detail page")
-    check_detail_screenshot(directory)
 
+def check_started_job(query, origin, job_id):
     job = response_data(read_snapshot(query), query, origin, QUERY_JOB)
     if required_id(job, "dataJobId", query) != job_id:
-        raise ValueError(f"{query}: query the job created in this wizard, job {job_id}")
+        raise ValueError(f"{query}: query the job returned by create, job {job_id}")
     tasks = required_list(job, "dataTasks", query)
     if not all(isinstance(task, dict) and task.get("dataTaskType") for task in tasks):
         raise ValueError(f"{query}: expected dataTaskType for every task")
     for task in tasks:
         required_id(task, "dataTaskId", query)
-    # The wizard can finish BUILD_STRUCT before the operator starts a sync.
+    # Async creation can finish BUILD_STRUCT before the operator starts a sync.
     work_tasks = [task for task in tasks if task["dataTaskType"] != "BUILD_STRUCT"] or tasks
     if not any(task.get("dataTaskStatus") in {"RUNNING", "COMPLETE"} for task in work_tasks):
         raise ValueError(f"{query}: capture job {job_id} with a RUNNING or COMPLETE work task after starting it")
+
+
+def check_api_job(directory, query):
+    _create, origin, job_id = created_job(directory / "create.json")
+    check_started_job(query, origin, job_id)
+    print(f"API creation and started-task evidence match job {job_id}; verify native target readback separately")
+
+
+def check_browser_job(directory, query):
+    create_path = directory / "create.json"
+    create, origin, job_id = created_job(create_path)
+    if browser_route(create, "pageUrl", create_path) != (origin, "/data/job/create/process"):
+        raise ValueError(f"{create_path}: record the creation request from the Console wizard")
+    detail_path = directory / "detail.json"
+    detail = read_snapshot(detail_path)
+    if browser_route(detail, "pageUrl", detail_path) != (origin, f"/data/job/{job_id}"):
+        raise ValueError(f"{detail_path}: open job {job_id} on the same Console and capture its detail page")
+    check_detail_screenshot(directory)
+    check_started_job(query, origin, job_id)
     print(f"Browser creation, detail and started-task evidence match job {job_id}")
 
 
@@ -414,12 +427,15 @@ def main():
     idle.add_argument("--not-before", required=True, help="Release claim time including UTC offset")
     idle.add_argument("pages", nargs="+", type=Path)
     idle.add_argument("--job", action="append", type=Path, default=[], help="Additional query-job snapshot, repeatable")
-    browser = commands.add_parser("browser-job", help="Match wizard creation, detail page and started query-job")
+    api = commands.add_parser("api-job", help="Default acceptance: match API creation and started query-job without page evidence")
+    api.add_argument("directory", type=Path, help="API evidence directory containing create.json")
+    api.add_argument("query", type=Path, help="Query-job requestUrl and response data captured after start")
+    browser = commands.add_parser("browser-job", help="When the user requests pages: match wizard, detail and started query-job")
     browser.add_argument("directory", type=Path, help="Browser capture directory with create.json, detail.json and a detail PNG or JPEG")
     browser.add_argument("query", type=Path, help="Query-job requestUrl and response data captured after start")
     stopped = commands.add_parser("stopped-test-job", help="Check a new incremental test job after stopping it")
     stopped.add_argument("--origin", required=True, help="Console origin used to create the test job")
-    stopped.add_argument("--job-id", type=int, required=True, help="Job ID returned by the test wizard")
+    stopped.add_argument("--job-id", type=int, required=True, help="Job ID returned when creating the test job")
     stopped.add_argument("query", type=Path, help="Query-job requestUrl and response data captured after stop")
     fresh = commands.add_parser("fresh-check", help="Check the completion of a replayed or newly created CHECK job")
     fresh.add_argument("after", type=Path)
@@ -434,6 +450,8 @@ def main():
     try:
         if args.command == "idle":
             check_idle(args.pages, args.job, args.origin, args.worker, args.not_before)
+        elif args.command == "api-job":
+            check_api_job(args.directory, args.query)
         elif args.command == "browser-job":
             check_browser_job(args.directory, args.query)
         elif args.command == "stopped-test-job":

@@ -1,0 +1,13 @@
+name: Console API acceptance
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  api-evidence:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s cloudcanal-dev-test/tests -p test_browser_job.py
+      - run: python3 -m unittest discover -s datasource-lab/tests -p test_slot_connections.py

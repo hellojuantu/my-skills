@@ -532,7 +532,7 @@ def build_parser():
     continue_job = subparsers.add_parser(
         "continue-job",
         aliases=["job-continue", "active-fsm-job", "job-active-fsm"],
-        help="Continue a post-structure-migration job using the frontend fsmStart action.",
+        help="Activate an inactive INIT job using frontend fsmStart; BUILD_STRUCT, when present, must be COMPLETE.",
     )
     add_common(continue_job)
     continue_job.add_argument("--job-id", required=True)

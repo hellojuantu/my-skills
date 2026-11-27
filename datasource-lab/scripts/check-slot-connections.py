@@ -118,7 +118,7 @@ def mini_names():
     return module
 
 
-def page_slot(page, slots, names, configured):
+def page_slot(page, slots, names, configured, kind):
     if not isinstance(page, str) or any(ch <= " " or ch.isspace() for ch in page):
         return None
     try:
@@ -128,7 +128,12 @@ def page_slot(page, slots, names, configured):
         return None
     if url.scheme not in ("http", "https") or url.username is not None or port is None:
         return None
-    if url.path != "/" or url.query or url.fragment != "/ccdatasource":
+    if url.query:
+        return None
+    if kind == "api":
+        if url.path != "/cloudcanal/console/api/v1/inner/datasource/connection" or url.fragment:
+            return None
+    elif url.path != "/" or url.fragment != "/ccdatasource":
         return None
     slot = str(port)
     if slot not in slots or not names.host_matches(url.hostname, configured):
@@ -136,7 +141,7 @@ def page_slot(page, slots, names, configured):
     return slot
 
 
-def verify_results(data, connections, not_before, slots, names, configured):
+def verify_results(data, connections, not_before, slots, names, configured, evidence_kind):
     results = data.get("results")
     if not isinstance(results, list):
         raise ValueError("results: supply the Console Worker connection results")
@@ -148,12 +153,14 @@ def verify_results(data, connections, not_before, slots, names, configured):
         if not isinstance(row, dict):
             errors.append(f"result {index}: expected a result object")
             continue
-        page = row.get("pageUrl")
-        slot = page_slot(page, slots, names, configured)
+        field = "requestUrl" if evidence_kind == "api" else "pageUrl"
+        page = row.get(field)
+        slot = page_slot(page, slots, names, configured, evidence_kind)
         instance_id = row.get("instanceId")
         key = (slot, instance_id)
         if not isinstance(instance_id, str) or key not in connections:
-            errors.append(f"result {index}: expected a mapped instanceId on its declared Mini Console data-source page")
+            location = "connection API response" if evidence_kind == "api" else "data-source page"
+            errors.append(f"result {index}: expected a mapped instanceId on its declared Mini Console {location}")
             continue
 
         source_id, expected_cluster = connections[key]
@@ -186,7 +193,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("inventory", type=Path, help="full MotherData inventory captured by check-service.py")
     parser.add_argument("expected", type=Path, help="Mini slot mappings and run start")
-    parser.add_argument("evidence", type=Path, help="sanitized results observed on the Console pages")
+    parser.add_argument("evidence", type=Path, help="sanitized Console Worker connection results")
+    parser.add_argument("--evidence-kind", choices=("api", "browser"), default="api",
+                        help="use API requestUrl by default; browser pageUrl only when the user requested pages")
     parser.add_argument("--slot", type=int, metavar="PORT",
                         help="check the registered Mini Console port for a single slot (default: 8111 and 8112)")
     parser.add_argument("--source-id", action="append", metavar="ID",
@@ -204,8 +213,8 @@ def main():
         names = mini_names()
         _expected_host, configured = names.console_names()
         if not configured:
-            raise ValueError("Fill cloudcanal-dev-test/skills/cc-setup/mini.env before checking Mini Console pages.")
-        errors = verify_results(read_object(args.evidence), connections, not_before, required_slots, names, configured)
+            raise ValueError("Fill cloudcanal-dev-test/skills/cc-setup/mini.env before checking Mini Console results.")
+        errors = verify_results(read_object(args.evidence), connections, not_before, required_slots, names, configured, args.evidence_kind)
     except ValueError as error:
         errors = [str(error)]
     if errors:

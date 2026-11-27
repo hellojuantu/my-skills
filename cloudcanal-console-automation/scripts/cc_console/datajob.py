@@ -1093,7 +1093,7 @@ JOB_ACTIONS = {
     "stop": (STOP_JOB_PATH, STOP_BATCH_PATH, "stopped", "stop data job"),
     "restart": (RESTART_JOB_PATH, RESTART_BATCH_PATH, "restarted", "restart data job"),
     "replay": (REPLAY_JOB_PATH, None, "replayed", "replay data job"),
-    "active-fsm": (ACTIVE_FSM_PATH, ACTIVE_FSM_BATCH_PATH, "continued after structure migration", "active data job fsm"),
+    "active-fsm": (ACTIVE_FSM_PATH, ACTIVE_FSM_BATCH_PATH, "fsm activated", "active data job fsm"),
 }
 DELETE_BUSY_TASK_STATUSES = {"WAIT_START", "RUNNING"}
 DELETE_READY_WAIT_SECONDS = 30

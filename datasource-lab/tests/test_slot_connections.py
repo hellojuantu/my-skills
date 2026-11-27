@@ -47,14 +47,15 @@ class SlotConnectionsTest(unittest.TestCase):
                 "status": "Successful", "testedAt": "2020-01-01T00:00:04Z",
             })
 
-    def check(self, *options):
+    def check(self, *options, kind="browser"):
         with TemporaryDirectory() as directory:
             paths = []
             for name, data in (("inventory", self.inventory), ("expected", self.expected), ("evidence", self.evidence)):
                 path = Path(directory, name + ".json")
                 path.write_text(json.dumps(data), encoding="utf-8")
                 paths.append(path)
-            return subprocess.run([sys.executable, self.script, *paths, *options], env=self.env,
+            evidence_kind = ["--evidence-kind", kind] if kind is not None else []
+            return subprocess.run([sys.executable, self.script, *paths, *evidence_kind, *options], env=self.env,
                                   text=True, capture_output=True)
 
     def test_subset_and_default_full_inventory(self):
@@ -66,6 +67,21 @@ class SlotConnectionsTest(unittest.TestCase):
         self.assertIn("missing MotherData IDs 7", result.stderr)
         self.inventory["dataSources"].pop(0)
         self.assertEqual(self.check().returncode, 0)
+
+    def test_default_api_evidence_requires_connection_endpoint_without_a_page(self):
+        endpoint = "/cloudcanal/console/api/v1/inner/datasource/connection"
+        for row in self.evidence["results"]:
+            origin = row.pop("pageUrl").split("/#/", 1)[0]
+            row["requestUrl"] = origin + endpoint
+        result = self.check(*SELECTION, kind=None)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        row = self.evidence["results"][0]
+        for url in ("http://mini:8111/#/ccdatasource", "http://mini:8113" + endpoint,
+                    "http://mini.unrelated.test:8111" + endpoint):
+            with self.subTest(url=url):
+                row["requestUrl"] = url
+                result = self.check(*SELECTION, kind=None)
+                self.assertEqual(result.returncode, 1, result.stdout)
 
     def test_new_slot_requires_its_own_console_page(self):
         self.expected["slots"].clear()
