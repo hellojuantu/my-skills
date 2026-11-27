@@ -1,0 +1,22 @@
+gradle.projectsEvaluated {
+    gradle.rootProject.tasks.register('checkIdeaDependencies') {
+        doLast {
+            int checked = 0
+            gradle.rootProject.allprojects.each { project ->
+                ['compileClasspath', 'runtimeClasspath', 'testCompileClasspath',
+                 'testRuntimeClasspath', 'annotationProcessor', 'testAnnotationProcessor'].each { name ->
+                    def configuration = project.configurations.findByName(name)
+                    if (configuration != null && configuration.canBeResolved) {
+                        try {
+                            configuration.resolve()
+                            checked++
+                        } catch (Exception error) {
+                            throw new GradleException("IDEA dependency resolution failed: ${project.path}:${name}", error)
+                        }
+                    }
+                }
+            }
+            println "IDEA dependencies resolved: ${checked} configurations; no tests executed"
+        }
+    }
+}
