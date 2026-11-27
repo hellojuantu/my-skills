@@ -13,3 +13,5 @@
 | For an SSH identity check, click the signed-in Google account in Chrome. Hand the page to the user only when it asks for a password, MFA, or a verification code. | `python3 -m unittest cloudcanal-dev-test.tests.test_ssh_auth` |
 | Do not create a backup unless the user explicitly asks. | `python3 -m unittest cloudcanal-dev-test.tests.test_backup` checks only paths and permissions. |
 | Tests use the Console API by default. Open a browser only when the user asks to see the page. | `check_console_jobs.py api-job` accepts evidence with no screenshot. |
+| A skill rewrite keeps each description on one line, and every markdown link lands on a heading or a file that is there. | `python3 -m unittest juantu-mode.tests.test_skill_pages` |
+| Do not add a check that only searches skill text for required sentences. | There is no automatic check. `check_bug_explain.py` and `check_qa_template.py` were deleted because each one failed a correct edit. |

@@ -1,0 +1,12 @@
+name: Skill pages
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  skill-pages:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest juantu-mode.tests.test_skill_pages
